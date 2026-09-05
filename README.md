@@ -70,6 +70,22 @@ Useful workflows:
 
 All write or execution operations require interactive confirmation. A pipeline run uses deployed Databricks code; it does not test an un-deployed local edit. Use Databricks permissions and separate sandbox resources for isolation.
 
+## Future scope
+
+The extension is intentionally organized around a provider-neutral ETL interface so additional workspaces can be added without changing the skills:
+
+- **Apache Airflow** — DAG runs, task logs, retries, backfills, and deployment revision checks.
+- **Snowflake** — query history, task status, warehouse usage, schemas, and safe SQL validation.
+- **dbt Cloud and dbt Core** — job runs, model/test failures, manifests, exposures, and artifact inspection.
+- **AWS Glue** — job runs, state transitions, CloudWatch output, schema metadata, and retries.
+- **Google Cloud Dataform and BigQuery** — workflow invocations, compilation results, schemas, and bounded validation queries.
+- **Microsoft Fabric and Azure Data Factory** — pipeline runs, activity failures, datasets, and integration runtime status.
+- **Apache Spark and Kubernetes operators** — application status, driver/executor logs, event logs, and artifact versions.
+
+Each provider should implement the same small capability groups: inspect execution, inspect schema and metadata, run a bounded validation, start or stop an execution, and record a checkpoint. Provider adapters should remain responsible for API details, pagination, authentication, and environment boundaries. The skills should continue to describe diagnosis, schema drift, validation, and repair in platform-neutral terms.
+
+Planned platform work includes OAuth and service-principal authentication, an MCP server shared by all harnesses, provider capability discovery, workspace/project configuration, and a validation result format that can be compared across providers. New providers will be added only after their read paths, confirmation gates, pagination, redaction, and sandbox behavior have offline tests.
+
 ## Development
 
 ```powershell
