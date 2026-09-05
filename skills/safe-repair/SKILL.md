@@ -1,0 +1,15 @@
+---
+name: safe-repair
+description: Apply an ETL code fix, validate a Databricks sandbox run, or prepare a production task repair with checkpoints and approval.
+---
+
+1. Establish the requested scope and diagnose the failure. Inspect local git status and deployed source revision. Preserve unrelated edits. Identify all affected tables, jobs and external side effects.
+2. Create a local repair evidence Markdown file using Pi's file tools. Record timestamp, workspace, job/run/task IDs, git HEAD and diff, deployed source revision, affected table versions from Delta history, validation thresholds, and recovery limitations. A version record is a checkpoint inventory, not a backup; retention/VACUUM can prevent recovery. If versions are unavailable, state that recovery is unverified.
+3. Apply the smallest authorized local patch. Show its diff. Get explicit decisions for missing fields, renames, dropped data, changed business semantics or non-idempotent reruns.
+4. Identify a sandbox job and principal with permissions restricted to sandbox writes. Catalog/schema defaults only resolve names; fully qualified references and job settings can target production. Verify input/output locations, job parameters, external sinks and deployed revision. Deployment uses the project's existing process; these tools do not upload or deploy local patches. Pause sandbox execution if the patched revision or isolation cannot be established.
+5. Start the sandbox job using `dbx_run` and a unique idempotency token. Reuse that token only for retries of the same logical request. Poll `dbx_inspect` until the run and all relevant tasks terminate. After an interrupted submission, inspect remote state before retrying.
+6. Validate output schema, row count, null/invalid-cast rates, duplicate keys and relevant business invariants against the recorded thresholds and comparable input snapshot. Use `dbx_query` status for pending SQL. HTTP success, a run ID, truncated output or a pending statement does not establish validation success. Record exact evidence and pass/fail/unknown for each check.
+7. Present diff, deployed revision, checkpoint file, validation results, affected production tasks and rerun assessment. Production repair is eligible only after all required checks pass and production deployment is verified through the existing release process. `dbx_repair` asks for interactive confirmation of task IDs, dependent-task behavior and evidence. For previously repaired runs, fetch repair history and supply the most recent repair ID.
+8. Poll the repaired run and repeat output invariants. Finish with observed terminal state, remaining failures and recovery options. If interrupted or uncertain, report the run/statement IDs for follow-up. Never automatically restore Delta tables or retry a repair submission with an unknown outcome.
+
+The extension gates its own execution tools. Pi's shell and other extensions can access the same credentials: enforce isolation with Databricks permissions, not skill instructions. Repair evidence is a human-review aid, not machine-verified proof.

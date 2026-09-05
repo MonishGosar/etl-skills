@@ -1,0 +1,13 @@
+{
+  "name": "pi-databricks",
+  "version": "0.1.0",
+  "description": "Databricks runtime tools and ETL workflows for Pi",
+  "type": "module",
+  "keywords": ["pi-package", "databricks", "etl"],
+  "files": ["extensions", "src", "skills", "README.md", "CONTEXT.md", ".claude-plugin"],
+  "pi": { "extensions": ["./extensions/databricks.ts"], "skills": ["./skills"] },
+  "engines": { "node": ">=22" },
+  "scripts": { "typecheck": "tsc --noEmit", "test": "tsx --test tests/*.test.ts" },
+  "peerDependencies": { "@earendil-works/pi-coding-agent": "*", "typebox": "*" },
+  "devDependencies": { "@types/node": "^22.0.0", "tsx": "^4.20.0", "typescript": "^5.9.0" }
+}

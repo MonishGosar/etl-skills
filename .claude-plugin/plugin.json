@@ -1,0 +1,10 @@
+{
+  "name": "pi-data",
+  "version": "0.1.0",
+  "description": "Safe Databricks pipeline diagnosis, schema drift analysis, and repair workflows for coding agents.",
+  "author": { "name": "pi-data contributors", "url": "https://github.com/yourname/pi-data" },
+  "repository": "https://github.com/yourname/pi-data",
+  "license": "MIT",
+  "keywords": ["databricks", "etl", "data-engineering", "pipelines", "schema-drift"],
+  "skills": ["./skills/diagnose-pipeline", "./skills/schema-drift", "./skills/safe-repair", "./skills/setup-pi-data"]
+}
