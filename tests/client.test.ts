@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { configFromEnv, DatabricksClient, numericId } from "../src/client.ts";
+import { configFromEnv, DatabricksClient, numericId, workspaceLabelFromEnv } from "../src/client.ts";
 
 test("config requires a secure workspace origin and token", () => {
   assert.throws(() => configFromEnv({ DATABRICKS_HOST: "http://example.com", DATABRICKS_TOKEN: "x" }), /HTTPS/);
@@ -8,6 +8,12 @@ test("config requires a secure workspace origin and token", () => {
   assert.deepEqual(configFromEnv({ DATABRICKS_HOST: "https://example.com", DATABRICKS_TOKEN: "secret", DATABRICKS_WAREHOUSE_ID: "w" }), {
     host: "https://example.com", token: "secret", warehouse: "w", catalog: undefined, schema: undefined,
   });
+});
+
+test("workspace labels never echo malformed host credentials", () => {
+  assert.equal(workspaceLabelFromEnv({}), "unconfigured");
+  assert.equal(workspaceLabelFromEnv({ DATABRICKS_HOST: "https://example.com" }), "https://example.com");
+  assert.equal(workspaceLabelFromEnv({ DATABRICKS_HOST: "https://user:secret@example.com/path" }), "invalid-configuration");
 });
 
 test("IDs are positive safe integers", () => {

@@ -1,0 +1,16 @@
+{
+  "name": "etl-agent-tools",
+  "owner": {
+    "name": "MonishGosar"
+  },
+  "description": "Portable ETL inspection tools and workflow skills for coding agents",
+  "plugins": [
+    {
+      "name": "etl-agent-tools",
+      "source": "./",
+      "description": "Read-only Databricks inspection over MCP with portable ETL diagnosis skills",
+      "version": "0.2.0-beta.1",
+      "category": "development"
+    }
+  ]
+}

@@ -1,0 +1,5 @@
+# Copy this table to a trusted project's .codex/config.toml or to ~/.codex/config.toml.
+[mcp_servers.etl]
+command = "etl-agent-tools-mcp"
+args = ["--read-only"]
+env_vars = ["DATABRICKS_HOST", "DATABRICKS_TOKEN", "DATABRICKS_WAREHOUSE_ID", "DATABRICKS_CATALOG", "DATABRICKS_SCHEMA"]

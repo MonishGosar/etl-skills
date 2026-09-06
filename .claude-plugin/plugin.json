@@ -1,10 +1,10 @@
 {
-  "name": "pi-data",
-  "version": "0.1.0",
-  "description": "Safe Databricks pipeline diagnosis, schema drift analysis, and repair workflows for coding agents.",
+  "name": "etl-agent-tools",
+  "version": "0.2.0-beta.1",
+  "description": "Read-only Databricks inspection over MCP with portable diagnosis and guarded repair workflows.",
   "author": { "name": "MonishGosar", "url": "https://github.com/MonishGosar" },
   "repository": "https://github.com/MonishGosar/etl-skills",
   "license": "MIT",
   "keywords": ["databricks", "etl", "data-engineering", "pipelines", "schema-drift"],
-  "skills": ["./skills/diagnose-pipeline", "./skills/schema-drift", "./skills/safe-repair", "./skills/setup-pi-data"]
+  "skills": ["./skills/diagnose-pipeline", "./skills/schema-drift", "./skills/safe-repair", "./skills/setup-etl-workspace"]
 }

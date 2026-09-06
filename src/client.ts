@@ -4,7 +4,7 @@ export type Config = {
 
 export function configFromEnv(env: NodeJS.ProcessEnv = process.env): Config {
   if (!env.DATABRICKS_HOST || !env.DATABRICKS_TOKEN) {
-    throw new Error("Set DATABRICKS_HOST and DATABRICKS_TOKEN before launching Pi.");
+    throw new Error("Set DATABRICKS_HOST and DATABRICKS_TOKEN before launching the harness.");
   }
   const url = new URL(env.DATABRICKS_HOST);
   if (url.protocol !== "https:" || url.username || url.password || url.search || url.hash || url.pathname !== "/") {
@@ -12,6 +12,19 @@ export function configFromEnv(env: NodeJS.ProcessEnv = process.env): Config {
   }
   return { host: url.origin, token: env.DATABRICKS_TOKEN, warehouse: env.DATABRICKS_WAREHOUSE_ID,
     catalog: env.DATABRICKS_CATALOG, schema: env.DATABRICKS_SCHEMA };
+}
+
+export function workspaceLabelFromEnv(env: NodeJS.ProcessEnv = process.env): string {
+  if (!env.DATABRICKS_HOST) return "unconfigured";
+  try {
+    const url = new URL(env.DATABRICKS_HOST);
+    if (url.protocol !== "https:" || url.username || url.password || url.search || url.hash || url.pathname !== "/") {
+      return "invalid-configuration";
+    }
+    return url.origin;
+  } catch {
+    return "invalid-configuration";
+  }
 }
 
 export class DatabricksClient {
@@ -50,11 +63,4 @@ export function numericId(value: string | undefined, name: string): number {
   const id = Number(text);
   if (!/^\d+$/.test(text) || !Number.isSafeInteger(id) || id < 1) throw new Error(`${name} must be a positive safe integer.`);
   return id;
-}
-
-export function result(data: unknown) {
-  const text = JSON.stringify(data, null, 2);
-  const truncated = text.length > 24_000;
-  return { content: [{ type: "text" as const, text: truncated ? text.slice(0, 24_000) + "\n[Output truncated; narrow the request or use pagination.]" : text }],
-    details: { truncated } };
 }

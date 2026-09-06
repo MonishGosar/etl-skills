@@ -1,0 +1,16 @@
+# Merge this opt-in row into a DeepSeek Harness Cordis patch after installing the package.
+- insert:
+    - id: etl-mcp
+      name: '@deepseek-ai/dsh-mcp-client'
+      config:
+        serverName: etl
+        transport: stdio
+        command: etl-agent-tools-mcp
+        args: ['--read-only']
+        cwd: !!js process.cwd()
+        env:
+          DATABRICKS_HOST: !!js process.env.DATABRICKS_HOST
+          DATABRICKS_TOKEN: !!js process.env.DATABRICKS_TOKEN
+          DATABRICKS_WAREHOUSE_ID: !!js process.env.DATABRICKS_WAREHOUSE_ID
+          DATABRICKS_CATALOG: !!js process.env.DATABRICKS_CATALOG
+          DATABRICKS_SCHEMA: !!js process.env.DATABRICKS_SCHEMA
