@@ -89,3 +89,26 @@ test("skill installer copies every shared skill into an agents directory", async
     await rm(directory, { recursive: true, force: true });
   }
 });
+
+test("setup command configures every harness without writing secrets", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "etl-agent-tools-setup-"));
+  try {
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      const child = spawn(process.execPath, ["dist/setup.js", "--harness", "all", "--target", directory], { stdio: ["ignore", "pipe", "pipe"] });
+      const [code] = await once(child, "exit");
+      assert.equal(code, 0);
+    }
+    const codex = await readFile(join(directory, ".codex", "config.toml"), "utf8");
+    assert.match(codex, /command = "etl-agent-tools-mcp"/);
+    const claude = JSON.parse(await readFile(join(directory, ".mcp.json"), "utf8"));
+    assert.deepEqual(claude.mcpServers.etl.args, ["--read-only"]);
+    const deepseek = await readFile(join(directory, ".etl-agent", "deepseek.cordis.yml"), "utf8");
+    assert.match(deepseek, /@deepseek-ai\/dsh-mcp-client/);
+    const profile = await readFile(join(directory, ".etl-agent", "project.md"), "utf8");
+    assert.match(profile, /Required variables: DATABRICKS_HOST, DATABRICKS_TOKEN/);
+    assert.doesNotMatch(profile, /dapi[a-zA-Z0-9]+/);
+    await readFile(join(directory, ".claude", "skills", "setup-etl-workspace", "SKILL.md"), "utf8");
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});

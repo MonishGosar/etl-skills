@@ -4,6 +4,19 @@ Portable Databricks inspection and ETL diagnosis workflows for Pi, Claude Code, 
 
 Version `0.2.0-beta.1` adds a bundled read-only stdio MCP server. Pi also receives guarded Databricks execution tools; every SQL submission, pipeline action, job action, and repair requires interactive confirmation.
 
+## Guided setup
+
+Install the beta once, open the repository where you want to use it, and run:
+
+```powershell
+npm.cmd install --global etl-agent-tools@beta
+etl-agent-tools-setup
+```
+
+Choose Codex, Claude Code, DeepSeek Harness, Pi, or all supported harnesses. The setup command installs the same shared skills in the correct directory, safely adds the available project configuration, creates `.etl-agent/project.md`, and prints any final harness command. It records environment-variable names but never asks for or writes a token.
+
+The harness-specific sections below are manual alternatives and troubleshooting references.
+
 ## Support
 
 | Harness | Skills | Read-only MCP tools | Guarded mutations |
@@ -40,7 +53,7 @@ pi install .
 pi
 ```
 
-After publication:
+From npm:
 
 ```powershell
 pi install npm:etl-agent-tools@0.2.0-beta.1

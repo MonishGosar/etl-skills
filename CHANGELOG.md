@@ -8,6 +8,7 @@
 - Portable `etl_inspect`, `etl_query_status`, and `etl_capabilities` tools.
 - Shared Databricks adapter and approval interface used by Pi and MCP.
 - Harness configuration examples and a cross-harness skill installer.
+- Interactive `etl-agent-tools-setup` command for one-step Codex, Claude Code, DeepSeek Harness, or Pi project setup.
 - Workspace environment guide covering current Databricks configuration and planned provider contracts.
 
 ### Changed

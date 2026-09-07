@@ -16,6 +16,10 @@ This guide explains which values a user needs, where to obtain them, and when to
 
 Claude Code, Codex, and DeepSeek Harness use the bundled read-only MCP server. Mutating Databricks operations remain exclusive to interactive Pi sessions in this beta.
 
+## Fastest setup
+
+After installing the package globally, run `etl-agent-tools-setup` in the repository where the harness will work. Choose one harness or all supported harnesses. The command installs skills and configuration, then prints this variable checklist. It does not request, display, or save credential values.
+
 ## When to configure a workspace
 
 Collect workspace values after the ETL workspace and a dedicated least-privilege principal exist, but before launching the harness. Set variables in the same terminal that starts Pi or the local MCP server. A child process inherits a snapshot of its parent's environment, so restart the harness after adding, rotating, or removing a value.

@@ -4,7 +4,7 @@ import ts from "typescript";
 
 const packageRoot = resolve(import.meta.dirname, "..");
 const outputRoot = resolve(packageRoot, "dist");
-const entries = ["client", "core", "databricks-adapter", "mcp", "install-skills"];
+const entries = ["client", "core", "databricks-adapter", "mcp", "install-skills", "setup"];
 
 await rm(outputRoot, { recursive: true, force: true });
 await mkdir(outputRoot, { recursive: true });
@@ -29,6 +29,6 @@ for (const entry of entries) {
       getNewLine: () => "\n",
     }));
   }
-  const shebang = entry === "mcp" || entry === "install-skills" ? "#!/usr/bin/env node\n" : "";
+  const shebang = entry === "mcp" || entry === "install-skills" || entry === "setup" ? "#!/usr/bin/env node\n" : "";
   await writeFile(resolve(outputRoot, `${entry}.js`), `${shebang}${compiled.outputText}`, "utf8");
 }

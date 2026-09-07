@@ -7,6 +7,7 @@ import { createInterface } from "node:readline";
 const packageJson = JSON.parse(await readFile("package.json", "utf8"));
 await readFile(resolve("dist", "mcp.js"), "utf8");
 await readFile(resolve("dist", "install-skills.js"), "utf8");
+await readFile(resolve("dist", "setup.js"), "utf8");
 const releaseRoot = resolve(".release");
 const smokeRoot = resolve(releaseRoot, "smoke");
 const tarball = resolve(releaseRoot, `${packageJson.name}-${packageJson.version}.tgz`);
@@ -67,6 +68,7 @@ try {
   const installedPackage = JSON.parse(await readFile(resolve(installedRoot, "package.json"), "utf8"));
   assert.equal(installedPackage.name, "etl-agent-tools");
   assert.equal(installedPackage.version, "0.2.0-beta.1");
+  assert.equal(installedPackage.bin["etl-agent-tools-setup"], "./dist/setup.js");
   await readFile(resolve(installedRoot, "LICENSE"), "utf8");
   await readFile(resolve(installedRoot, "ENVIRONMENT_SETUP.md"), "utf8");
 
@@ -88,6 +90,11 @@ try {
   const skillsTarget = resolve(smokeRoot, "installed-skills");
   run(process.execPath, [resolve(installedRoot, "dist", "install-skills.js"), "--target", skillsTarget]);
   await readFile(resolve(skillsTarget, "setup-etl-workspace", "SKILL.md"), "utf8");
+
+  const setupTarget = resolve(smokeRoot, "setup-project");
+  run(process.execPath, [resolve(installedRoot, "dist", "setup.js"), "--harness", "codex", "--target", setupTarget]);
+  await readFile(resolve(setupTarget, ".codex", "config.toml"), "utf8");
+  await readFile(resolve(setupTarget, ".agents", "skills", "setup-etl-workspace", "SKILL.md"), "utf8");
 
   process.stdout.write(`Packed install verified: ${tarball}\n`);
 } finally {
