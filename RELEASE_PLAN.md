@@ -8,7 +8,7 @@ The release promise is complete when a user can install the package, configure o
 
 ## Implementation status (2026-09-06)
 
-Version `0.2.0-beta.1` is now a prepared, unpublished release candidate:
+Version `0.2.0-beta.1` is the first portable beta release:
 
 - The provider logic is separated from Pi in a shared Databricks adapter.
 - Pi uses an injected interactive approval gate for mutations and keeps the `dbx_*` compatibility tools.
@@ -17,7 +17,7 @@ Version `0.2.0-beta.1` is now a prepared, unpublished release candidate:
 - One skill source can be copied to `.agents/skills` with `etl-agent-tools-install-skills`.
 - Type checking, mocked transport tests, MCP protocol tests, Claude plugin validation, and clean packed-install verification pass locally on Windows.
 
-Publication, live Databricks sandbox checks, a DeepSeek-host process smoke test, and macOS/Linux compatibility checks remain release gates. The npm prerelease, Git tag, and GitHub release have not been created.
+Live Databricks sandbox checks, a DeepSeek-host process smoke test, and macOS/Linux compatibility checks remain gates for promotion from beta to a stable release. npm publication, the Git tag, and the GitHub release must still be verified independently for every release.
 
 ## Audited starting baseline (2026-09-06)
 
