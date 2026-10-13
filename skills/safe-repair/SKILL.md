@@ -3,7 +3,7 @@ name: safe-repair
 description: Apply an ETL code fix and prepare guarded Databricks sandbox validation or production repair through an interactive Pi session.
 ---
 
-1. Establish the requested scope and diagnose the failure. Inspect local git status and deployed source revision. Preserve unrelated edits. Identify all affected tables, jobs and external side effects.
+1. Establish the requested scope and diagnose the failure. Inspect local git status and deployed source revision. Preserve unrelated edits. Identify all affected tables, jobs and external side effects. Use `etl_uc_context` downstream tables as the impact list when a failing table is known, and record sections that returned `available: false`.
 2. Create a local repair evidence Markdown file using Pi's file tools. Record timestamp, workspace, job/run/task IDs, git HEAD and diff, deployed source revision, affected table versions from Delta history, validation thresholds, and recovery limitations. A version record is a checkpoint inventory, not a backup; retention/VACUUM can prevent recovery. If versions are unavailable, state that recovery is unverified.
 3. Apply the smallest authorized local patch. Show its diff. Get explicit decisions for missing fields, renames, dropped data, changed business semantics or non-idempotent reruns.
 4. Identify a sandbox job and principal with permissions restricted to sandbox writes. Catalog/schema defaults only resolve names; fully qualified references and job settings can target production. Verify input/output locations, job parameters, external sinks and deployed revision. Deployment uses the project's existing process; these tools do not upload or deploy local patches. Pause sandbox execution if the patched revision or isolation cannot be established.

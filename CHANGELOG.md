@@ -4,16 +4,19 @@
 
 ### Added
 
+- Databricks OAuth machine-to-machine authentication for a service principal client ID and secret, with in-memory token fetch and refresh. Personal access tokens remain supported. Set `DATABRICKS_AUTH` when both credential families are present.
+- Read-only `etl_uc_context` for Unity Catalog table and column lineage, explicit grants and effective permissions, and optional job cost from `system.billing` when a warehouse is configured. A section the principal cannot access returns `available: false`.
+- Guidance for using this toolkit as the diagnosis and safe-repair layer alongside Databricks managed MCP servers and Databricks agent skills.
 - Read-only dbt failure diagnosis from local `run_results.json`, `manifest.json`, and optional `dbt.log`.
 - Read-only Airflow DAG run, task instance, and task log diagnosis through the stable REST API (`v1` or `v2`, bearer or basic auth).
 - `etl_diagnose`, which returns a root-cause brief with the failed node or task, a scrubbed error excerpt, upstream and downstream impact, a cause category, and a suggested next step.
 - dbt and Airflow actions on `etl_inspect`.
-- `etl_capabilities` now reports Databricks, dbt, and Airflow configuration and read-only operations.
+- `etl_capabilities` reports Databricks, dbt, and Airflow configuration and read-only operations, including Databricks OAuth and `uc_context`.
 
 ### Changed
 
-- The diagnose-pipeline skill covers Databricks, dbt, and Airflow.
-- Harness setup forwards dbt and Airflow environment variable names and still does not write secret values.
+- The diagnose-pipeline skill covers Databricks lineage and grants, dbt, and Airflow.
+- Guided setup, harness configuration, and the environment guide accept either a personal access token or OAuth client credentials, and forward dbt and Airflow environment variable names. The installer still does not write secret values.
 
 ## 0.2.0-beta.1 - 2026-09-07
 

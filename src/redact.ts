@@ -13,6 +13,7 @@ const PATTERNS: Array<{ pattern: RegExp; replace: string }> = [
 export function secretsFromEnv(env: NodeJS.ProcessEnv = process.env): string[] {
   return [
     env.DATABRICKS_TOKEN,
+    env.DATABRICKS_CLIENT_SECRET,
     env.AIRFLOW_TOKEN,
     env.AIRFLOW_PASSWORD,
     env.DBT_CLOUD_TOKEN,

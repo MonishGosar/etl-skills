@@ -1,5 +1,6 @@
 import { requireApproval } from "./core.js";
 import { numericId, required } from "./client.js";
+import { readUnityCatalogContext } from "./unity-catalog.js";
 export class DatabricksAdapter {
     client;
     constructor(client) {
@@ -12,6 +13,7 @@ export class DatabricksAdapter {
             operations: [
                 { name: "inspect", operationClass: "read", available: true },
                 { name: "query_status", operationClass: "read", available: true },
+                { name: "uc_context", operationClass: "read", available: true },
                 { name: "query_execute", operationClass: "execute", available: true },
                 { name: "pipeline_control", operationClass: "control", available: true },
                 { name: "job_control", operationClass: "control", available: true },
@@ -22,6 +24,7 @@ export class DatabricksAdapter {
     async execute(request, options = {}) {
         switch (request.kind) {
             case "inspect": return this.inspect(request, options.signal);
+            case "uc_context": return readUnityCatalogContext(this.client, request, options.signal);
             case "pipeline": return this.pipeline(request, options);
             case "query": return this.query(request, options);
             case "run": return this.run(request, options);

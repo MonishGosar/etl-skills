@@ -23,7 +23,7 @@ Prioritize dbt Cloud, AWS Glue, BigQuery/Dataform, Azure Data Factory/Fabric, an
 ## Cross-provider features
 
 1. Add named workspace profiles for `dev`, `staging`, or `prod`. Profiles contain environment-variable names and non-secret selectors, never credential values.
-2. Add OAuth and workload identity for Databricks, Snowflake, AWS, Google Cloud, and Azure. Prefer short-lived credentials.
+2. Databricks workspace OAuth machine-to-machine (service principal client ID and secret, in-memory token fetch and refresh) is implemented alongside personal access tokens. Still add user-to-machine OAuth and workload identity for Databricks, plus OAuth or workload identity for Snowflake, AWS, Google Cloud, and Azure. Prefer short-lived credentials.
 3. Define normalized validation results for schema, row count, null rate, duplicate keys, freshness, and business invariants.
 4. Add bounded evidence export with secret scanning.
 5. Add OpenTelemetry spans for operation name, provider, status, duration, and provider request ID. Exclude SQL text, rows, tokens, notebook source, and other payload data.

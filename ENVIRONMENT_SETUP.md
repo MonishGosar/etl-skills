@@ -6,7 +6,7 @@ This guide explains which values a user needs, where to obtain them, and when to
 
 | Provider | Status in this repository | What works now |
 | --- | --- | --- |
-| Databricks | Implemented | Read-only MCP inspection for supported harnesses; guarded SQL, job, pipeline, and repair operations in Pi |
+| Databricks | Implemented | Read-only MCP inspection, Unity Catalog lineage and grants, optional `system.billing` job cost; guarded SQL, job, pipeline, and repair operations in Pi. Personal access tokens and OAuth machine-to-machine service principals |
 | Airflow | Implemented, read-only | DAG run, task instance, and task log diagnosis through the stable REST API. Trigger, clear, retry, and managed-cloud auth are not shipped |
 | dbt Core | Implemented, read-only | Local `run_results.json`, `manifest.json`, and optional `dbt.log` diagnosis. dbt is not executed |
 | Snowflake | Planned | Environment contract proposed below; no adapter is shipped |
@@ -48,14 +48,22 @@ Remove-Item Env:DATABRICKS_TOKEN
 | Variable | Required when | Where to get it | Secret |
 | --- | --- | --- | --- |
 | `DATABRICKS_HOST` | Every Databricks operation | Open the target workspace and copy its HTTPS origin, for example `https://adb-...azuredatabricks.net` or `https://dbc-....cloud.databricks.com`. Remove every path, query, and fragment. | No |
-| `DATABRICKS_TOKEN` | Every Databricks operation | In the same workspace, create a personal access token from user settings if your administrator permits PATs. Prefer a short lifetime and a dedicated principal. | Yes |
-| `DATABRICKS_WAREHOUSE_ID` | SQL submission | Open **SQL Warehouses**, select the sandbox warehouse, and copy its warehouse ID from its connection details or URL. This is the ID, not the HTTP path. | No |
+| `DATABRICKS_TOKEN` | Personal access token auth | In the same workspace, create a personal access token from user settings if your administrator permits PATs. Prefer a short lifetime and a dedicated principal. | Yes |
+| `DATABRICKS_CLIENT_ID` | OAuth machine-to-machine auth | On the service principal, open the Secrets tab and copy the client ID (application ID) shown when the OAuth secret is generated. | No |
+| `DATABRICKS_CLIENT_SECRET` | OAuth machine-to-machine auth | Generate an OAuth secret for that service principal. Databricks shows the secret once. Prefer a secret scoped to the APIs this toolkit calls. | Yes |
+| `DATABRICKS_AUTH` | Both credential families are set | Set `pat` or `oauth-m2m`. When only one family is set, the adapter selects it. When both are set and this variable is empty, startup fails instead of guessing. | No |
+| `DATABRICKS_OAUTH_SCOPE` | Optional OAuth scope | Defaults to `all-apis`. Set the same scope names bound to the OAuth secret, such as `sql,jobs,unity-catalog`. | No |
+| `DATABRICKS_WAREHOUSE_ID` | Arbitrary SQL, lineage fallback, and job cost | Open **SQL Warehouses**, select the sandbox warehouse, and copy its warehouse ID from its connection details or URL. This is the ID, not the HTTP path. | No |
 | `DATABRICKS_CATALOG` | Optional SQL name default | Copy the sandbox catalog name from Catalog Explorer. | No |
 | `DATABRICKS_SCHEMA` | Optional SQL name default | Copy the sandbox schema name from Catalog Explorer. | No |
 
-The current adapter supports PAT bearer authentication. OAuth and service-principal environment variables belong to a future adapter release.
+Use one credential family. Personal access tokens send `Authorization: Bearer`. OAuth machine-to-machine posts client credentials to `{DATABRICKS_HOST}/oidc/v1/token` with HTTP Basic authentication, caches the access token in process memory, and requests a new token before the one-hour expiry. The client secret and access token are scrubbed from tool errors and response bodies.
+
+Lineage and grants use read-only Unity Catalog HTTP APIs and do not need a warehouse. If the lineage API is unavailable, `etl_uc_context` falls back to a fixed `SELECT` on `system.access.table_lineage` and `system.access.column_lineage` when `DATABRICKS_WAREHOUSE_ID` is set. Job cost is a fixed `SELECT` on `system.billing.usage` and, when permitted, `system.billing.list_prices`. Each of those sections returns `available: false` when the principal lacks permission.
 
 ### Set for the current PowerShell session
+
+Personal access token:
 
 ```powershell
 $env:DATABRICKS_HOST = "https://your-workspace.cloud.databricks.com"
@@ -67,9 +75,19 @@ $env:DATABRICKS_SCHEMA = "sandbox_schema"
 pi
 ```
 
-`DATABRICKS_WAREHOUSE_ID` is unnecessary when only inspecting jobs or pipelines. Catalog and schema are optional even for SQL, but fully qualified object names are safer evidence.
+OAuth machine-to-machine:
 
-References: [Databricks personal access tokens](https://docs.databricks.com/aws/en/dev-tools/auth/pat), [Databricks SQL warehouse connection details](https://docs.databricks.com/aws/en/integrations/compute-details).
+```powershell
+$env:DATABRICKS_HOST = "https://your-workspace.cloud.databricks.com"
+$env:DATABRICKS_CLIENT_ID = "your-service-principal-client-id"
+$env:DATABRICKS_CLIENT_SECRET = "your-oauth-secret"
+$env:DATABRICKS_OAUTH_SCOPE = "all-apis"
+$env:DATABRICKS_WAREHOUSE_ID = "your-sandbox-warehouse-id"
+```
+
+`DATABRICKS_WAREHOUSE_ID` is unnecessary when only inspecting jobs, pipelines, lineage, or grants. It is required for arbitrary SQL, the system-table lineage fallback, and job cost. Catalog and schema are optional even for SQL, but fully qualified object names are safer evidence.
+
+References: [Databricks personal access tokens](https://docs.databricks.com/aws/en/dev-tools/auth/pat), [OAuth machine-to-machine](https://docs.databricks.com/aws/en/dev-tools/auth/oauth-m2m), [Databricks SQL warehouse connection details](https://docs.databricks.com/aws/en/integrations/compute-details), [Lineage system tables](https://docs.databricks.com/aws/en/admin/system-tables/lineage), [Billable usage system table](https://docs.databricks.com/aws/en/admin/system-tables/billing).
 
 ## Snowflake (planned contract)
 
@@ -177,13 +195,21 @@ profiles:
       host: DATABRICKS_HOST
       credential: DATABRICKS_TOKEN
       warehouse: DATABRICKS_WAREHOUSE_ID
+  databricks-sandbox-oauth:
+    provider: databricks
+    environment: sandbox
+    env:
+      host: DATABRICKS_HOST
+      client_id: DATABRICKS_CLIENT_ID
+      client_secret: DATABRICKS_CLIENT_SECRET
+      warehouse: DATABRICKS_WAREHOUSE_ID
 ```
 
 The profile says which variable to read; it never stores the value. Production should use a separate principal and separate process, and mutating tools should stay unavailable unless the selected harness supplies the tested approval gate described in `RELEASE_PLAN.md`.
 
 ## Harness environment propagation
 
-These configurations apply to version `0.2.0-beta.1`.
+These configurations apply to the current package.
 
 Claude Code project plugins can map existing variables in the plugin-root `.mcp.json`:
 
@@ -196,7 +222,13 @@ Claude Code project plugins can map existing variables in the plugin-root `.mcp.
       "env": {
         "DATABRICKS_HOST": "${DATABRICKS_HOST}",
         "DATABRICKS_TOKEN": "${DATABRICKS_TOKEN}",
+        "DATABRICKS_CLIENT_ID": "${DATABRICKS_CLIENT_ID:-}",
+        "DATABRICKS_CLIENT_SECRET": "${DATABRICKS_CLIENT_SECRET:-}",
+        "DATABRICKS_AUTH": "${DATABRICKS_AUTH:-}",
+        "DATABRICKS_OAUTH_SCOPE": "${DATABRICKS_OAUTH_SCOPE:-}",
         "DATABRICKS_WAREHOUSE_ID": "${DATABRICKS_WAREHOUSE_ID:-}",
+        "DATABRICKS_CATALOG": "${DATABRICKS_CATALOG:-}",
+        "DATABRICKS_SCHEMA": "${DATABRICKS_SCHEMA:-}",
         "DBT_ARTIFACTS_DIR": "${DBT_ARTIFACTS_DIR:-}",
         "DBT_PROJECT_DIR": "${DBT_PROJECT_DIR:-}",
         "DBT_LOG_PATH": "${DBT_LOG_PATH:-}",
@@ -219,7 +251,7 @@ Codex can forward selected ambient variables from project `.codex/config.toml`:
 [mcp_servers.etl]
 command = "etl-agent-tools-mcp"
 args = ["--read-only"]
-env_vars = ["DATABRICKS_HOST", "DATABRICKS_TOKEN", "DATABRICKS_WAREHOUSE_ID", "DBT_ARTIFACTS_DIR", "DBT_PROJECT_DIR", "DBT_LOG_PATH", "AIRFLOW_BASE_URL", "AIRFLOW_API_VERSION", "AIRFLOW_AUTH_MODE", "AIRFLOW_TOKEN", "AIRFLOW_USERNAME", "AIRFLOW_PASSWORD", "AIRFLOW_ENVIRONMENT"]
+env_vars = ["DATABRICKS_HOST", "DATABRICKS_TOKEN", "DATABRICKS_CLIENT_ID", "DATABRICKS_CLIENT_SECRET", "DATABRICKS_AUTH", "DATABRICKS_OAUTH_SCOPE", "DATABRICKS_WAREHOUSE_ID", "DATABRICKS_CATALOG", "DATABRICKS_SCHEMA", "DBT_ARTIFACTS_DIR", "DBT_PROJECT_DIR", "DBT_LOG_PATH", "AIRFLOW_BASE_URL", "AIRFLOW_API_VERSION", "AIRFLOW_AUTH_MODE", "AIRFLOW_TOKEN", "AIRFLOW_USERNAME", "AIRFLOW_PASSWORD", "AIRFLOW_ENVIRONMENT"]
 ```
 
 DeepSeek Harness explicitly forwards credential-shaped variables because its MCP client scrubs them from the ambient environment by default:
@@ -236,7 +268,13 @@ DeepSeek Harness explicitly forwards credential-shaped variables because its MCP
         env:
           DATABRICKS_HOST: !!js process.env.DATABRICKS_HOST
           DATABRICKS_TOKEN: !!js process.env.DATABRICKS_TOKEN
+          DATABRICKS_CLIENT_ID: !!js process.env.DATABRICKS_CLIENT_ID
+          DATABRICKS_CLIENT_SECRET: !!js process.env.DATABRICKS_CLIENT_SECRET
+          DATABRICKS_AUTH: !!js process.env.DATABRICKS_AUTH
+          DATABRICKS_OAUTH_SCOPE: !!js process.env.DATABRICKS_OAUTH_SCOPE
           DATABRICKS_WAREHOUSE_ID: !!js process.env.DATABRICKS_WAREHOUSE_ID
+          DATABRICKS_CATALOG: !!js process.env.DATABRICKS_CATALOG
+          DATABRICKS_SCHEMA: !!js process.env.DATABRICKS_SCHEMA
           DBT_ARTIFACTS_DIR: !!js process.env.DBT_ARTIFACTS_DIR
           DBT_PROJECT_DIR: !!js process.env.DBT_PROJECT_DIR
           DBT_LOG_PATH: !!js process.env.DBT_LOG_PATH

@@ -82,7 +82,7 @@ try {
     assert.equal(initialized.error, undefined);
     mcp.send({ jsonrpc: "2.0", method: "notifications/initialized" });
     const listed = await mcp.request(2, "tools/list", {});
-    assert.deepEqual(listed.result.tools.map(tool => tool.name), ["etl_capabilities", "etl_inspect", "etl_query_status", "etl_diagnose"]);
+    assert.deepEqual(listed.result.tools.map(tool => tool.name), ["etl_capabilities", "etl_inspect", "etl_uc_context", "etl_query_status", "etl_diagnose"]);
   } finally {
     mcp.child.kill();
   }

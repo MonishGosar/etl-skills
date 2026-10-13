@@ -55,6 +55,16 @@ export default function databricks(pi: ExtensionAPI) {
   });
 
   pi.registerTool({
+    name: "etl_uc_context", label: "Unity Catalog diagnosis context",
+    description: "Read upstream and downstream lineage and grants for a failing catalog.schema.table. Pass job_id only when a warehouse is configured and job cost would change the diagnosis; that submits one fixed system.billing statement. Missing permission returns available:false for that section. This tool never accepts caller SQL.",
+    parameters: Type.Object({ table: Type.String(), column: optional(), job_id: optional() }),
+    async execute(_id, p, signal) {
+      const { client, adapter } = createAdapter();
+      return resultFor(client, await adapter.execute({ kind: "uc_context", ...p }, { signal }));
+    },
+  });
+
+  pi.registerTool({
     name: "dbx_pipeline", label: "Run Databricks pipeline",
     description: "Start or stop a deployed Databricks pipeline after interactive approval. Starting runs deployed code and does not deploy local edits.",
     parameters: Type.Object({ action: choice("start", "stop"), pipeline_id: Type.String(), full_refresh: Type.Optional(Type.Boolean()), refresh_selection: Type.Optional(Type.Array(Type.String())) }),

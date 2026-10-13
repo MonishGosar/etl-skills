@@ -1,5 +1,11 @@
 import { describeAirflow } from "./airflow-client.js";
+import { configFromEnv, databricksConfigured } from "./client.js";
 import { dbtConfigured } from "./dbt-adapter.js";
+function databricksAuth(env) {
+    if (!databricksConfigured(env))
+        return "unconfigured";
+    return configFromEnv(env).auth ?? "unconfigured";
+}
 export function readOnlyCapabilities(env = process.env) {
     const airflow = describeAirflow(env);
     return {
@@ -7,8 +13,9 @@ export function readOnlyCapabilities(env = process.env) {
         providers: [
             {
                 provider: "databricks",
-                configured: Boolean(env.DATABRICKS_HOST && env.DATABRICKS_TOKEN),
-                operations: ["inspect", "query_status"],
+                configured: databricksConfigured(env),
+                auth: databricksAuth(env),
+                operations: ["inspect", "query_status", "uc_context"],
                 unavailableMutations: ["query_execute", "query_cancel", "pipeline_control", "job_control", "job_repair"],
             },
             {

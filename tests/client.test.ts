@@ -1,12 +1,13 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { configFromEnv, DatabricksClient, numericId, workspaceLabelFromEnv } from "../src/client.ts";
+import { scrubSecrets, toolError } from "../src/core.ts";
 
 test("config requires a secure workspace origin and token", () => {
   assert.throws(() => configFromEnv({ DATABRICKS_HOST: "http://example.com", DATABRICKS_TOKEN: "x" }), /HTTPS/);
   assert.throws(() => configFromEnv({ DATABRICKS_HOST: "https://example.com/api", DATABRICKS_TOKEN: "x" }), /origin/);
-  assert.deepEqual(configFromEnv({ DATABRICKS_HOST: "https://example.com", DATABRICKS_TOKEN: "secret", DATABRICKS_WAREHOUSE_ID: "w" }), {
-    host: "https://example.com", token: "secret", warehouse: "w", catalog: undefined, schema: undefined,
+  assert.deepEqual(configFromEnv({ DATABRICKS_HOST: "https://example.com", DATABRICKS_TOKEN: "secret", DATABRICKS_WAREHOUSE_ID: "w", DATABRICKS_CATALOG: " " }), {
+    host: "https://example.com", auth: "pat", token: "secret", warehouse: "w", catalog: undefined, schema: undefined,
   });
 });
 
@@ -31,6 +32,14 @@ test("client sends bearer requests and redacts token in JSON", async () => {
   assert.equal(seen?.url, "https://example.com/api/test?page=2");
   assert.equal(seen?.headers.get("authorization"), "Bearer secret");
   assert.deepEqual(payload, { value: "[REDACTED]", ok: true });
+});
+
+test("tool errors scrub credential values and ignore short strings", () => {
+  assert.equal(scrubSecrets("prefix secret-value suffix", ["ab", "secret-value"]), "prefix [REDACTED] suffix");
+  const result = toolError(new Error("failed with secret-value"), ["secret-value"]);
+  assert.equal(result.isError, true);
+  assert.equal(result.content[0].text.includes("secret-value"), false);
+  assert.match(result.content[0].text, /\[REDACTED\]/);
 });
 
 test("client does not expose error response bodies", async () => {
