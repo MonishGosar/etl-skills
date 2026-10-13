@@ -1,7 +1,7 @@
 {
   "name": "etl-agent-tools",
   "version": "0.2.0-beta.1",
-  "description": "Portable ETL inspection tools and guarded Databricks workflows for coding agents",
+  "description": "Portable ETL inspection: Databricks, local dbt failure diagnosis, and read-only Airflow diagnosis",
   "type": "module",
   "license": "MIT",
   "repository": {
@@ -19,6 +19,8 @@
   "keywords": [
     "pi-package",
     "databricks",
+    "dbt",
+    "airflow",
     "etl",
     "mcp",
     "agent-skills"

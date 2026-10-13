@@ -6,9 +6,9 @@ This roadmap starts after the portable `0.2.0-beta.1` release candidate. Add cap
 
 ### 1. Apache Airflow
 
-Start with DAG discovery, DAG-run inspection, task-instance status and logs, deployment revision evidence, and retry history. Detect Airflow 2 API v1 versus Airflow 3 API v2 during setup and store the selected version explicitly. Authentication must follow the deployment's auth manager or managed-cloud identity flow.
+Read-only DAG discovery, DAG-run inspection, task-instance status, task logs, and a root-cause brief are implemented. Set `AIRFLOW_API_VERSION` to `v1` or `v2` explicitly. Bearer and HTTP basic authentication are supported. Amazon MWAA and Google IAP auth are not implemented.
 
-Keep the first adapter read-only. Add trigger, retry, clear, pause, and backfill only after task selection, logical-date semantics, side effects, and approval behavior have integration tests.
+Add trigger, retry, clear, pause, and backfill only after task selection, logical-date semantics, side effects, and approval behavior have integration tests. Managed-cloud identity remains future work.
 
 ### 2. Snowflake
 
@@ -18,7 +18,7 @@ Add SQL submission, cancellation, task resume or suspend, and reruns only after 
 
 ### 3. Later adapters
 
-Prioritize dbt Cloud/Core, AWS Glue, BigQuery/Dataform, Azure Data Factory/Fabric, and Spark/Kubernetes according to user demand. Add a shared capability only when at least two provider adapters need it; provider-specific evidence can remain in a typed `details` field.
+Prioritize dbt Cloud, AWS Glue, BigQuery/Dataform, Azure Data Factory/Fabric, and Spark/Kubernetes according to user demand. Local dbt Core artifacts now have a read-only diagnosis path. The package does not invoke dbt. Add a shared capability only when at least two provider adapters need it; provider-specific evidence can remain in a typed `details` field.
 
 ## Cross-provider features
 

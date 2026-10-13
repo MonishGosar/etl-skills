@@ -1,8 +1,8 @@
 # ETL Agent Tools
 
-Portable Databricks inspection and ETL diagnosis workflows for Pi, Claude Code, Codex, DeepSeek Harness, and other MCP clients.
+Portable ETL inspection and failure diagnosis for Pi, Claude Code, Codex, DeepSeek Harness, and other MCP clients.
 
-Version `0.2.0-beta.1` adds a bundled read-only stdio MCP server. Pi also receives guarded Databricks execution tools; every SQL submission, pipeline action, job action, and repair requires interactive confirmation.
+Version `0.2.0-beta.1` adds a bundled read-only stdio MCP server. It inspects Databricks, reads local dbt artifacts, and reads Airflow DAG runs through the stable REST API. Pi also receives guarded Databricks execution tools; every SQL submission, pipeline action, job action, and repair requires interactive confirmation.
 
 ## Guided setup
 
@@ -27,7 +27,7 @@ The harness-specific sections below are manual alternatives and troubleshooting 
 | DeepSeek Harness | Install into `.agents/skills` | `etl_capabilities`, `etl_inspect`, `etl_query_status` | Unavailable in this beta |
 | Other MCP clients | Client-specific | `etl_capabilities`, `etl_inspect`, `etl_query_status` | Unavailable in this beta |
 
-Databricks is the only implemented provider. Snowflake, Airflow, and other environment-variable contracts in [ENVIRONMENT_SETUP.md](ENVIRONMENT_SETUP.md) are planned and are not read by this release.
+Databricks inspection, local dbt artifact diagnosis, and read-only Airflow diagnosis are implemented. Snowflake, dbt Cloud, and managed Airflow identity flows in [ENVIRONMENT_SETUP.md](ENVIRONMENT_SETUP.md) are not read by this release.
 
 ## Configure Databricks
 
@@ -40,7 +40,33 @@ $env:DATABRICKS_TOKEN = "your-short-lived-token"
 $env:DATABRICKS_WAREHOUSE_ID = "your-sandbox-warehouse-id"
 ```
 
-The package does not load `.env` files. See [ETL workspace environment setup](ENVIRONMENT_SETUP.md) for where to obtain each value, optional catalog/schema defaults, credential handling, and future provider contracts.
+The package does not load `.env` files. See [ETL workspace environment setup](ENVIRONMENT_SETUP.md) for where to obtain each value, optional catalog/schema defaults, dbt artifact paths, Airflow API settings, and credential handling.
+
+## Configure dbt artifacts
+
+Point the server at a directory that already contains `run_results.json` and `manifest.json`. The server does not run dbt.
+
+```powershell
+$env:DBT_ARTIFACTS_DIR = "C:\path\to\dbt\target"
+# Optional:
+$env:DBT_LOG_PATH = "C:\path\to\dbt\logs\dbt.log"
+```
+
+`DBT_PROJECT_DIR` is an alternative. The server then reads `<project>\target`. `etl_diagnose` can also take `artifacts_dir` for one call.
+
+## Configure Airflow
+
+Set the stable REST API version explicitly. Use `v1` for Airflow 2 and `v2` for Airflow 3. This release sends GET requests with bearer or basic auth. It does not trigger, clear, or retry tasks.
+
+```powershell
+$env:AIRFLOW_BASE_URL = "https://airflow-sandbox.example.com"
+$env:AIRFLOW_API_VERSION = "v2"
+$env:AIRFLOW_AUTH_MODE = "bearer"
+$env:AIRFLOW_TOKEN = "your-short-lived-jwt"
+$env:AIRFLOW_ENVIRONMENT = "sandbox"
+```
+
+HTTP is accepted only for `localhost` and `127.0.0.1`. Amazon MWAA and Google IAP auth are not implemented.
 
 ## Install for Pi
 
@@ -108,21 +134,22 @@ npm.cmd install --global etl-agent-tools@0.2.0-beta.1
 etl-agent-tools-install-skills --target .agents/skills
 ```
 
-The DeepSeek MCP client intentionally scrubs credential-shaped ambient variables. The supplied overlay explicitly forwards the five supported Databricks variables to the child server. Start DeepSeek Harness with the resulting patch and confirm that `mcp__etl__etl_capabilities`, `mcp__etl__etl_inspect`, and `mcp__etl__etl_query_status` are discovered.
+The DeepSeek MCP client intentionally scrubs credential-shaped ambient variables. The supplied overlay explicitly forwards Databricks, dbt, and Airflow variables to the child server. Start DeepSeek Harness with the resulting patch and confirm that `mcp__etl__etl_capabilities`, `mcp__etl__etl_inspect`, `mcp__etl__etl_query_status`, and `mcp__etl__etl_diagnose` are discovered.
 
 ## MCP tools
 
 | Tool | Purpose |
 | --- | --- |
-| `etl_capabilities` | Report configuration presence, provider, mode, and available operations without contacting Databricks |
-| `etl_inspect` | Read jobs, runs, output, schemas, notebooks, pipelines, and pipeline updates |
-| `etl_query_status` | Read an existing SQL statement and bounded result without submitting or cancelling it |
+| `etl_capabilities` | Report which providers are configured and which read-only operations exist, without contacting a remote workspace |
+| `etl_inspect` | Read Databricks jobs, runs, schemas, notebooks, and pipelines; dbt artifact summaries; or Airflow DAG runs, task instances, and bounded task logs |
+| `etl_query_status` | Read an existing Databricks SQL statement and bounded result without submitting or cancelling it |
+| `etl_diagnose` | Build a root-cause brief for a dbt invocation or an Airflow DAG run: failed node or task, scrubbed error excerpt, upstream and downstream impact, cause category, and suggested next step |
 
-Results include provider and workspace identity. Text output is capped at 24,000 characters, and oversized structured data is omitted with an explicit truncation marker. Provider error bodies are not returned because they can contain credentials or source data.
+Results include provider and workspace identity. Text output is capped at 24,000 characters, and oversized structured data is omitted with an explicit truncation marker. Provider error bodies are not returned because they can contain credentials or source data. Log excerpts are capped and scrubbed the same way.
 
 ## Safety model
 
-The MCP server is read-only and rejects unknown command-line flags. It cannot submit SQL, start or stop an execution, cancel work, or repair a run.
+The MCP server is read-only and rejects unknown command-line flags. It cannot submit SQL, start or stop an execution, cancel work, repair a run, invoke dbt, or trigger an Airflow task. dbt diagnosis reads only `run_results.json`, `manifest.json`, and an optional `dbt.log`. Airflow diagnosis sends GET requests only.
 
 Pi mutations pass through a shared operation policy and Pi's interactive confirmation gate. Acceptance of a remote request is not completion: inspect the returned identifier and poll the remote state. A pipeline or job run uses deployed Databricks code and does not deploy a local patch.
 
