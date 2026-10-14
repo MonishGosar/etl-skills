@@ -6,5 +6,5 @@
   "repository": "https://github.com/MonishGosar/etl-skills",
   "license": "MIT",
   "keywords": ["databricks", "etl", "data-engineering", "pipelines", "schema-drift"],
-  "skills": ["./skills/diagnose-pipeline", "./skills/schema-drift", "./skills/safe-repair", "./skills/setup-etl-workspace"]
+  "skills": ["./skills/diagnose-pipeline", "./skills/schema-drift", "./skills/safe-repair", "./skills/setup-etl-workspace", "./skills/unity-catalog-context"]
 }

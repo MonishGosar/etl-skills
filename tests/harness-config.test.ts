@@ -7,6 +7,9 @@ test("Claude plugin launches the bundled MCP server in read-only mode", async ()
   assert.equal(config.mcpServers.etl.command, "node");
   assert.deepEqual(config.mcpServers.etl.args, ["${CLAUDE_PLUGIN_ROOT}/dist/mcp.js", "--read-only"]);
   assert.equal(config.mcpServers.etl.env.DATABRICKS_TOKEN, "${DATABRICKS_TOKEN:-}");
+  assert.equal(config.mcpServers.etl.env.DATABRICKS_CLIENT_ID, "${DATABRICKS_CLIENT_ID:-}");
+  assert.equal(config.mcpServers.etl.env.DATABRICKS_CLIENT_SECRET, "${DATABRICKS_CLIENT_SECRET:-}");
+  assert.equal(config.mcpServers.etl.env.DATABRICKS_AUTH, "${DATABRICKS_AUTH:-}");
 });
 
 test("Codex template uses the installed portable executable and forwards variable names only", async () => {
@@ -14,6 +17,7 @@ test("Codex template uses the installed portable executable and forwards variabl
   assert.match(config, /command = "etl-agent-tools-mcp"/);
   assert.match(config, /"--read-only"/);
   assert.match(config, /env_vars = \["DATABRICKS_HOST", "DATABRICKS_TOKEN"/);
+  assert.match(config, /"DATABRICKS_CLIENT_ID", "DATABRICKS_CLIENT_SECRET"/);
   assert.match(config, /"AIRFLOW_TOKEN"/);
   assert.match(config, /"DBT_ARTIFACTS_DIR"/);
   assert.doesNotMatch(config, /dapi[a-zA-Z0-9]+/);
@@ -26,5 +30,6 @@ test("DeepSeek overlay opts into credential forwarding and read-only mode", asyn
   assert.match(config, /args: \['--read-only'\]/);
   assert.match(config, /DATABRICKS_TOKEN: !!js process\.env\.DATABRICKS_TOKEN/);
   assert.match(config, /AIRFLOW_TOKEN: !!js process\.env\.AIRFLOW_TOKEN/);
+  assert.match(config, /DATABRICKS_CLIENT_SECRET: !!js process\.env\.DATABRICKS_CLIENT_SECRET/);
   assert.doesNotMatch(config, /dapi[a-zA-Z0-9]+/);
 });

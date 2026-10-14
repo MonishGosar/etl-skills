@@ -12,32 +12,43 @@ const choices: Array<{ key: string; harness: Harness; label: string }> = [
   { key: "5", harness: "all", label: "All supported harnesses" },
 ];
 
+const databricksEnv = [
+  "DATABRICKS_HOST",
+  "DATABRICKS_TOKEN",
+  "DATABRICKS_CLIENT_ID",
+  "DATABRICKS_CLIENT_SECRET",
+  "DATABRICKS_AUTH",
+  "DATABRICKS_OAUTH_SCOPE",
+  "DATABRICKS_WAREHOUSE_ID",
+  "DATABRICKS_CATALOG",
+  "DATABRICKS_SCHEMA",
+];
+
+const optionalProviderEnv = [
+  "DBT_ARTIFACTS_DIR",
+  "DBT_PROJECT_DIR",
+  "DBT_LOG_PATH",
+  "AIRFLOW_BASE_URL",
+  "AIRFLOW_API_VERSION",
+  "AIRFLOW_AUTH_MODE",
+  "AIRFLOW_TOKEN",
+  "AIRFLOW_USERNAME",
+  "AIRFLOW_PASSWORD",
+  "AIRFLOW_ENVIRONMENT",
+];
+
+const forwardedEnv = [...databricksEnv, ...optionalProviderEnv];
+
 const codexConfig = `[mcp_servers.etl]
 command = "etl-agent-tools-mcp"
 args = ["--read-only"]
-env_vars = ["DATABRICKS_HOST", "DATABRICKS_TOKEN", "DATABRICKS_WAREHOUSE_ID", "DATABRICKS_CATALOG", "DATABRICKS_SCHEMA", "DBT_ARTIFACTS_DIR", "DBT_PROJECT_DIR", "DBT_LOG_PATH", "AIRFLOW_BASE_URL", "AIRFLOW_API_VERSION", "AIRFLOW_AUTH_MODE", "AIRFLOW_TOKEN", "AIRFLOW_USERNAME", "AIRFLOW_PASSWORD", "AIRFLOW_ENVIRONMENT"]
+env_vars = [${forwardedEnv.map(name => `"${name}"`).join(", ")}]
 `;
 
 const claudeServer = {
   command: "etl-agent-tools-mcp",
   args: ["--read-only"],
-  env: {
-    DATABRICKS_HOST: "${DATABRICKS_HOST:-}",
-    DATABRICKS_TOKEN: "${DATABRICKS_TOKEN:-}",
-    DATABRICKS_WAREHOUSE_ID: "${DATABRICKS_WAREHOUSE_ID:-}",
-    DATABRICKS_CATALOG: "${DATABRICKS_CATALOG:-}",
-    DATABRICKS_SCHEMA: "${DATABRICKS_SCHEMA:-}",
-    DBT_ARTIFACTS_DIR: "${DBT_ARTIFACTS_DIR:-}",
-    DBT_PROJECT_DIR: "${DBT_PROJECT_DIR:-}",
-    DBT_LOG_PATH: "${DBT_LOG_PATH:-}",
-    AIRFLOW_BASE_URL: "${AIRFLOW_BASE_URL:-}",
-    AIRFLOW_API_VERSION: "${AIRFLOW_API_VERSION:-}",
-    AIRFLOW_AUTH_MODE: "${AIRFLOW_AUTH_MODE:-}",
-    AIRFLOW_TOKEN: "${AIRFLOW_TOKEN:-}",
-    AIRFLOW_USERNAME: "${AIRFLOW_USERNAME:-}",
-    AIRFLOW_PASSWORD: "${AIRFLOW_PASSWORD:-}",
-    AIRFLOW_ENVIRONMENT: "${AIRFLOW_ENVIRONMENT:-}",
-  },
+  env: Object.fromEntries(forwardedEnv.map(name => [name, `\${${name}:-}`])),
 };
 
 const deepseekConfig = `# Add this patch to your DeepSeek Harness Cordis configuration.
@@ -51,21 +62,7 @@ const deepseekConfig = `# Add this patch to your DeepSeek Harness Cordis configu
         args: ['--read-only']
         cwd: !!js process.cwd()
         env:
-          DATABRICKS_HOST: !!js process.env.DATABRICKS_HOST
-          DATABRICKS_TOKEN: !!js process.env.DATABRICKS_TOKEN
-          DATABRICKS_WAREHOUSE_ID: !!js process.env.DATABRICKS_WAREHOUSE_ID
-          DATABRICKS_CATALOG: !!js process.env.DATABRICKS_CATALOG
-          DATABRICKS_SCHEMA: !!js process.env.DATABRICKS_SCHEMA
-          DBT_ARTIFACTS_DIR: !!js process.env.DBT_ARTIFACTS_DIR
-          DBT_PROJECT_DIR: !!js process.env.DBT_PROJECT_DIR
-          DBT_LOG_PATH: !!js process.env.DBT_LOG_PATH
-          AIRFLOW_BASE_URL: !!js process.env.AIRFLOW_BASE_URL
-          AIRFLOW_API_VERSION: !!js process.env.AIRFLOW_API_VERSION
-          AIRFLOW_AUTH_MODE: !!js process.env.AIRFLOW_AUTH_MODE
-          AIRFLOW_TOKEN: !!js process.env.AIRFLOW_TOKEN
-          AIRFLOW_USERNAME: !!js process.env.AIRFLOW_USERNAME
-          AIRFLOW_PASSWORD: !!js process.env.AIRFLOW_PASSWORD
-          AIRFLOW_ENVIRONMENT: !!js process.env.AIRFLOW_ENVIRONMENT
+${forwardedEnv.map(name => `          ${name}: !!js process.env.${name}`).join("\n")}
 `;
 
 function usage(): never {
@@ -167,12 +164,12 @@ if (selected.includes("pi")) changes.push("prepared the workspace profile for Pi
 
 const profileDirectory = resolve(projectRoot, ".etl-agent");
 await mkdir(profileDirectory, { recursive: true });
-await writeFile(resolve(profileDirectory, "project.md"), `# ETL workspace\n\n- Provider: Databricks, local dbt artifacts, and Airflow when their variables are set\n- Access mode: read-only MCP${selected.includes("pi") ? "; guarded Databricks mutations in interactive Pi" : ""}\n- Environment: set by the launching shell\n- Required variables: DATABRICKS_HOST, DATABRICKS_TOKEN\n- Optional variables: DATABRICKS_WAREHOUSE_ID, DATABRICKS_CATALOG, DATABRICKS_SCHEMA\n- Optional dbt variables: DBT_ARTIFACTS_DIR, DBT_PROJECT_DIR, DBT_LOG_PATH\n- Optional Airflow variables: AIRFLOW_BASE_URL, AIRFLOW_API_VERSION, AIRFLOW_AUTH_MODE, AIRFLOW_TOKEN, AIRFLOW_USERNAME, AIRFLOW_PASSWORD, AIRFLOW_ENVIRONMENT\n`, "utf8");
+await writeFile(resolve(profileDirectory, "project.md"), `# ETL workspace\n\n- Provider: Databricks, local dbt artifacts, and Airflow when their variables are set\n- Role: diagnosis and safe repair alongside Databricks managed MCP servers\n- Access mode: read-only MCP${selected.includes("pi") ? "; guarded Databricks mutations in interactive Pi" : ""}\n- Auth: personal access token (DATABRICKS_TOKEN) or OAuth machine-to-machine (DATABRICKS_CLIENT_ID and DATABRICKS_CLIENT_SECRET)\n- Environment: set by the launching shell\n- Required variables: DATABRICKS_HOST and either DATABRICKS_TOKEN or DATABRICKS_CLIENT_ID with DATABRICKS_CLIENT_SECRET\n- Optional Databricks variables: DATABRICKS_AUTH, DATABRICKS_OAUTH_SCOPE, DATABRICKS_WAREHOUSE_ID, DATABRICKS_CATALOG, DATABRICKS_SCHEMA\n- Optional dbt variables: DBT_ARTIFACTS_DIR, DBT_PROJECT_DIR, DBT_LOG_PATH\n- Optional Airflow variables: AIRFLOW_BASE_URL, AIRFLOW_API_VERSION, AIRFLOW_AUTH_MODE, AIRFLOW_TOKEN, AIRFLOW_USERNAME, AIRFLOW_PASSWORD, AIRFLOW_ENVIRONMENT\n`, "utf8");
 
 process.stdout.write(`\nSetup complete for ${harness}.\n`);
 for (const change of [...new Set(changes)]) process.stdout.write(`  ✓ ${change}\n`);
 process.stdout.write(`  ✓ created .etl-agent/project.md without secret values\n\n`);
-process.stdout.write("Before starting the harness, set:\n  DATABRICKS_HOST      workspace HTTPS origin\n  DATABRICKS_TOKEN     short-lived access token (secret)\n\nOptional Databricks:\n  DATABRICKS_WAREHOUSE_ID, DATABRICKS_CATALOG, DATABRICKS_SCHEMA\n\nOptional dbt artifacts:\n  DBT_ARTIFACTS_DIR or DBT_PROJECT_DIR, DBT_LOG_PATH\n\nOptional Airflow:\n  AIRFLOW_BASE_URL, AIRFLOW_API_VERSION (v1 or v2), AIRFLOW_AUTH_MODE, AIRFLOW_TOKEN or AIRFLOW_USERNAME and AIRFLOW_PASSWORD\n\n");
+process.stdout.write("Before starting the harness, set DATABRICKS_HOST and one credential family.\n\nPersonal access token:\n  DATABRICKS_TOKEN\n\nOAuth machine-to-machine service principal:\n  DATABRICKS_CLIENT_ID\n  DATABRICKS_CLIENT_SECRET\n\nIf both families are present, set DATABRICKS_AUTH to pat or oauth-m2m and unset the other family.\n\nOptional Databricks:\n  DATABRICKS_OAUTH_SCOPE (default all-apis), DATABRICKS_WAREHOUSE_ID, DATABRICKS_CATALOG, DATABRICKS_SCHEMA\n\nLineage and grants use read-only Unity Catalog APIs. Job cost and the system.access lineage fallback need DATABRICKS_WAREHOUSE_ID.\nUse Databricks managed MCP servers for Genie, ad hoc SQL, and Unity Catalog functions. Keep this server for diagnosis and safe repair.\n\nOptional dbt artifacts:\n  DBT_ARTIFACTS_DIR or DBT_PROJECT_DIR, DBT_LOG_PATH\n\nOptional Airflow:\n  AIRFLOW_BASE_URL, AIRFLOW_API_VERSION (v1 or v2), AIRFLOW_AUTH_MODE, AIRFLOW_TOKEN or AIRFLOW_USERNAME and AIRFLOW_PASSWORD\n\n");
 process.stdout.write("Get the values: https://github.com/MonishGosar/etl-skills/blob/main/ENVIRONMENT_SETUP.md\n");
 if (selected.includes("codex")) process.stdout.write("Verify Codex: codex mcp list\n");
 if (selected.includes("claude")) process.stdout.write("Verify Claude Code: start claude, then run /mcp\n");

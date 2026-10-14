@@ -11,6 +11,10 @@
         env:
           DATABRICKS_HOST: !!js process.env.DATABRICKS_HOST
           DATABRICKS_TOKEN: !!js process.env.DATABRICKS_TOKEN
+          DATABRICKS_CLIENT_ID: !!js process.env.DATABRICKS_CLIENT_ID
+          DATABRICKS_CLIENT_SECRET: !!js process.env.DATABRICKS_CLIENT_SECRET
+          DATABRICKS_AUTH: !!js process.env.DATABRICKS_AUTH
+          DATABRICKS_OAUTH_SCOPE: !!js process.env.DATABRICKS_OAUTH_SCOPE
           DATABRICKS_WAREHOUSE_ID: !!js process.env.DATABRICKS_WAREHOUSE_ID
           DATABRICKS_CATALOG: !!js process.env.DATABRICKS_CATALOG
           DATABRICKS_SCHEMA: !!js process.env.DATABRICKS_SCHEMA

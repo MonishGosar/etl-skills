@@ -13,6 +13,7 @@ Version `0.2.0-beta.1` is the first portable beta release:
 - The provider logic is separated from Pi in a shared Databricks adapter.
 - Pi uses an injected interactive approval gate for mutations and keeps the `dbx_*` compatibility tools.
 - The bundled stdio MCP server exposes only `etl_capabilities`, `etl_inspect`, and `etl_query_status`.
+- Later Databricks diagnosis work adds `etl_uc_context` plus OAuth machine-to-machine authentication. See `CHANGELOG.md`.
 - Claude Code, Codex, and DeepSeek Harness configurations launch the same read-only executable.
 - One skill source can be copied to `.agents/skills` with `etl-agent-tools-install-skills`.
 - Type checking, mocked transport tests, MCP protocol tests, Claude plugin validation, and clean packed-install verification pass locally on Windows.

@@ -72,7 +72,14 @@ export function toolResult(provider: ProviderName, workspace: string, data: unkn
   };
 }
 
-export function toolError(error: unknown) {
+export function scrubSecrets(text: string, secrets: readonly string[]): string {
+  const unique = [...new Set(secrets.filter(secret => secret.length >= 4))].sort((left, right) => right.length - left.length);
+  let redacted = text;
+  for (const secret of unique) redacted = redacted.split(secret).join("[REDACTED]");
+  return redacted;
+}
+
+export function toolError(error: unknown, secrets: readonly string[] = []) {
   const message = error instanceof Error ? error.message : "Unknown ETL tool failure.";
-  return { content: [{ type: "text" as const, text: message }], isError: true };
+  return { content: [{ type: "text" as const, text: scrubSecrets(message, secrets) }], isError: true };
 }

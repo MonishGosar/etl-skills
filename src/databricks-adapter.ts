@@ -1,6 +1,7 @@
 import type { ApprovalRequest, EtlWorkspaceAdapter, ExecuteOptions, WorkspaceCapabilities } from "./core.js";
 import { requireApproval } from "./core.js";
 import { DatabricksClient, numericId, required } from "./client.js";
+import { readUnityCatalogContext } from "./unity-catalog.js";
 
 export type InspectAction =
   | "jobs" | "job" | "runs" | "run" | "output" | "table" | "notebook"
@@ -11,7 +12,8 @@ export type DatabricksRequest =
   | { kind: "pipeline"; action: "start" | "stop"; pipeline_id: string; full_refresh?: boolean; refresh_selection?: string[] }
   | { kind: "query"; action: "execute" | "status" | "cancel"; sql?: string; statement_id?: string }
   | { kind: "run"; action: "start" | "cancel"; id: string; idempotency_token?: string; parameters?: Record<string, string> }
-  | { kind: "repair"; run_id: string; tasks: string[]; latest_repair_id?: string; rerun_dependent_tasks: boolean; evidence: string };
+  | { kind: "repair"; run_id: string; tasks: string[]; latest_repair_id?: string; rerun_dependent_tasks: boolean; evidence: string }
+  | { kind: "uc_context"; table: string; column?: string; job_id?: string };
 
 export class DatabricksAdapter implements EtlWorkspaceAdapter<DatabricksRequest> {
   constructor(readonly client: DatabricksClient) {}
@@ -23,6 +25,7 @@ export class DatabricksAdapter implements EtlWorkspaceAdapter<DatabricksRequest>
       operations: [
         { name: "inspect", operationClass: "read", available: true },
         { name: "query_status", operationClass: "read", available: true },
+        { name: "uc_context", operationClass: "read", available: true },
         { name: "query_execute", operationClass: "execute", available: true },
         { name: "pipeline_control", operationClass: "control", available: true },
         { name: "job_control", operationClass: "control", available: true },
@@ -34,6 +37,7 @@ export class DatabricksAdapter implements EtlWorkspaceAdapter<DatabricksRequest>
   async execute(request: DatabricksRequest, options: ExecuteOptions = {}): Promise<unknown> {
     switch (request.kind) {
       case "inspect": return this.inspect(request, options.signal);
+      case "uc_context": return readUnityCatalogContext(this.client, request, options.signal);
       case "pipeline": return this.pipeline(request, options);
       case "query": return this.query(request, options);
       case "run": return this.run(request, options);

@@ -7,6 +7,7 @@ import { readOnlyCapabilities } from "./capabilities.js";
 import { DatabricksClient, configFromEnv, workspaceLabelFromEnv } from "./client.js";
 import { toolError, toolResult } from "./core.js";
 import { DatabricksAdapter } from "./databricks-adapter.js";
+import { credentialSecretsFromEnv } from "./databricks-auth.js";
 import { DbtAdapter } from "./dbt-adapter.js";
 const VERSION = "0.2.0-beta.1";
 const readAnnotations = { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true };
@@ -22,6 +23,15 @@ for (const argument of process.argv.slice(2)) {
 function makeAdapter() {
     const client = new DatabricksClient(configFromEnv());
     return { client, adapter: new DatabricksAdapter(client) };
+}
+function toolSecrets() {
+    const values = [
+        ...credentialSecretsFromEnv(),
+        process.env.AIRFLOW_TOKEN,
+        process.env.AIRFLOW_PASSWORD,
+        process.env.DBT_CLOUD_TOKEN,
+    ];
+    return [...new Set(values.filter((value) => Boolean(value && value.trim().length >= 4)))];
 }
 function mcpResult(provider, workspace, data) {
     const result = toolResult(provider, workspace, data);
@@ -40,7 +50,7 @@ function providerForInspect(provider, action) {
     return selected;
 }
 export function createServer() {
-    const server = new McpServer({ name: "etl-agent-tools", version: VERSION }, { capabilities: { tools: {} }, instructions: "Read-only ETL inspection for Databricks, local dbt artifacts, and Airflow. Mutating operations are intentionally unavailable on this transport." });
+    const server = new McpServer({ name: "etl-agent-tools", version: VERSION }, { capabilities: { tools: {} }, instructions: "Read-only ETL diagnosis and inspection for Databricks, local dbt artifacts, and Airflow, alongside Databricks managed MCP servers. Use those servers for Genie, ad hoc SQL, and Unity Catalog functions. This server reads jobs, pipelines, lineage, and grants, plus dbt artifacts and Airflow DAG runs. A fixed system.billing statement runs only when etl_uc_context includes job_id. Mutating operations are intentionally unavailable on this transport." });
     server.registerTool("etl_capabilities", {
         title: "ETL workspace capabilities",
         description: "Describe configured providers and read-only operations without contacting a remote workspace.",
@@ -99,7 +109,27 @@ export function createServer() {
             return mcpResult("airflow", adapter.workspace, data);
         }
         catch (error) {
-            return toolError(error);
+            return toolError(error, toolSecrets());
+        }
+    });
+    server.registerTool("etl_uc_context", {
+        title: "Unity Catalog diagnosis context",
+        description: "Read upstream and downstream lineage and grants for a failing catalog.schema.table. When job_id is set and a SQL warehouse is configured, also read a fixed system.billing statement for that job. Sections that the principal cannot access return available:false. This tool never accepts caller SQL. Omit job_id to skip the billing statement.",
+        inputSchema: z.object({
+            provider: z.literal("databricks").optional(),
+            table: z.string().min(1),
+            column: z.string().optional(),
+            job_id: z.string().optional(),
+        }),
+        annotations: readAnnotations,
+    }, async ({ provider: _provider, table, column, job_id }, ctx) => {
+        try {
+            const { client, adapter } = makeAdapter();
+            const data = await adapter.execute({ kind: "uc_context", table, column, job_id }, { signal: ctx.mcpReq.signal });
+            return mcpResult("databricks", client.config.host, data);
+        }
+        catch (error) {
+            return toolError(error, toolSecrets());
         }
     });
     server.registerTool("etl_query_status", {
@@ -117,7 +147,7 @@ export function createServer() {
             return mcpResult("databricks", client.config.host, data);
         }
         catch (error) {
-            return toolError(error);
+            return toolError(error, toolSecrets());
         }
     });
     server.registerTool("etl_diagnose", {
@@ -146,7 +176,7 @@ export function createServer() {
             return mcpResult("airflow", adapter.workspace, data);
         }
         catch (error) {
-            return toolError(error);
+            return toolError(error, toolSecrets());
         }
     });
     return server;

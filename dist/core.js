@@ -22,7 +22,14 @@ export function toolResult(provider, workspace, data, limit = 24_000) {
         details: { truncated },
     };
 }
-export function toolError(error) {
+export function scrubSecrets(text, secrets) {
+    const unique = [...new Set(secrets.filter(secret => secret.length >= 4))].sort((left, right) => right.length - left.length);
+    let redacted = text;
+    for (const secret of unique)
+        redacted = redacted.split(secret).join("[REDACTED]");
+    return redacted;
+}
+export function toolError(error, secrets = []) {
     const message = error instanceof Error ? error.message : "Unknown ETL tool failure.";
-    return { content: [{ type: "text", text: message }], isError: true };
+    return { content: [{ type: "text", text: scrubSecrets(message, secrets) }], isError: true };
 }

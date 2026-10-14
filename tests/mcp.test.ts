@@ -16,6 +16,10 @@ function startMcp(args: string[] = [], extra: NodeJS.ProcessEnv = {}) {
       ...process.env,
       DATABRICKS_HOST: "",
       DATABRICKS_TOKEN: "",
+      DATABRICKS_CLIENT_ID: "",
+      DATABRICKS_CLIENT_SECRET: "",
+      DATABRICKS_AUTH: "",
+      DATABRICKS_OAUTH_SCOPE: "",
       DBT_ARTIFACTS_DIR: "",
       DBT_PROJECT_DIR: "",
       DBT_LOG_PATH: "",
@@ -66,7 +70,7 @@ test("stdio MCP server exposes only the portable read tools", async () => {
     const listed = await mcp.request(2, "tools/list", {});
     assert.deepEqual(
       listed.result.tools.map((tool: { name: string }) => tool.name),
-      ["etl_capabilities", "etl_inspect", "etl_query_status", "etl_diagnose"],
+      ["etl_capabilities", "etl_inspect", "etl_uc_context", "etl_query_status", "etl_diagnose"],
     );
     assert.ok(listed.result.tools.every((tool: { annotations?: { readOnlyHint?: boolean } }) => tool.annotations?.readOnlyHint));
 
@@ -74,10 +78,35 @@ test("stdio MCP server exposes only the portable read tools", async () => {
     assert.equal(called.result.isError, undefined);
     assert.equal(called.result.structuredContent.data.mode, "read-only");
     const providers = called.result.structuredContent.data.providers;
-    assert.deepEqual(providers.find((provider: { provider: string }) => provider.provider === "databricks").operations, ["inspect", "query_status"]);
-    assert.equal(providers.find((provider: { provider: string }) => provider.provider === "databricks").configured, false);
+    const databricks = providers.find((provider: { provider: string }) => provider.provider === "databricks");
+    assert.deepEqual(databricks.operations, ["inspect", "query_status", "uc_context"]);
+    assert.equal(databricks.configured, false);
+    assert.equal(databricks.auth, "unconfigured");
     assert.deepEqual(providers.find((provider: { provider: string }) => provider.provider === "dbt").operations, ["inspect", "diagnose"]);
     assert.deepEqual(providers.find((provider: { provider: string }) => provider.provider === "airflow").unavailableMutations, ["trigger", "clear", "retry", "pause", "backfill"]);
+  } finally {
+    mcp.child.kill();
+  }
+});
+
+test("capabilities treat OAuth machine-to-machine Databricks as configured without a token", async () => {
+  const mcp = startMcp(["--read-only"], {
+    DATABRICKS_HOST: "https://example.cloud.databricks.com",
+    DATABRICKS_CLIENT_ID: "client-id",
+    DATABRICKS_CLIENT_SECRET: "client-secret-value",
+  });
+  try {
+    await mcp.request(1, "initialize", {
+      protocolVersion: "2025-11-25",
+      capabilities: {},
+      clientInfo: { name: "etl-agent-tools-test", version: "1.0.0" },
+    });
+    mcp.send({ jsonrpc: "2.0", method: "notifications/initialized" });
+    const called = await mcp.request(2, "tools/call", { name: "etl_capabilities", arguments: {} });
+    const databricks = called.result.structuredContent.data.providers.find((provider: { provider: string }) => provider.provider === "databricks");
+    assert.equal(databricks.configured, true);
+    assert.equal(databricks.auth, "oauth-m2m");
+    assert.deepEqual(databricks.operations, ["inspect", "query_status", "uc_context"]);
   } finally {
     mcp.child.kill();
   }
@@ -141,6 +170,9 @@ test("skill installer copies every shared skill into an agents directory", async
     const diagnose = await readFile(join(target, "diagnose-pipeline", "SKILL.md"), "utf8");
     assert.match(diagnose, /etl_inspect/);
     assert.match(diagnose, /etl_diagnose/);
+    assert.match(diagnose, /etl_uc_context/);
+    const context = await readFile(join(target, "unity-catalog-context", "SKILL.md"), "utf8");
+    assert.match(context, /etl_uc_context/);
   } finally {
     await rm(directory, { recursive: true, force: true });
   }
@@ -161,7 +193,17 @@ test("setup command configures every harness without writing secrets", async () 
     const deepseek = await readFile(join(directory, ".etl-agent", "deepseek.cordis.yml"), "utf8");
     assert.match(deepseek, /@deepseek-ai\/dsh-mcp-client/);
     const profile = await readFile(join(directory, ".etl-agent", "project.md"), "utf8");
-    assert.match(profile, /Required variables: DATABRICKS_HOST, DATABRICKS_TOKEN/);
+    assert.match(profile, /DATABRICKS_HOST and either DATABRICKS_TOKEN or DATABRICKS_CLIENT_ID with DATABRICKS_CLIENT_SECRET/);
+    assert.match(profile, /Optional dbt variables: DBT_ARTIFACTS_DIR/);
+    assert.match(profile, /Optional Airflow variables: AIRFLOW_BASE_URL/);
+    assert.match(codex, /DATABRICKS_CLIENT_SECRET/);
+    assert.match(codex, /"DBT_ARTIFACTS_DIR"/);
+    assert.match(codex, /"AIRFLOW_TOKEN"/);
+    assert.match(deepseek, /DATABRICKS_CLIENT_SECRET: !!js process\.env\.DATABRICKS_CLIENT_SECRET/);
+    assert.match(deepseek, /AIRFLOW_TOKEN: !!js process\.env\.AIRFLOW_TOKEN/);
+    assert.equal(claude.mcpServers.etl.env.DATABRICKS_CLIENT_SECRET, "${DATABRICKS_CLIENT_SECRET:-}");
+    assert.equal(claude.mcpServers.etl.env.DBT_ARTIFACTS_DIR, "${DBT_ARTIFACTS_DIR:-}");
+    assert.equal(claude.mcpServers.etl.env.AIRFLOW_PASSWORD, "${AIRFLOW_PASSWORD:-}");
     assert.doesNotMatch(profile, /dapi[a-zA-Z0-9]+/);
     await readFile(join(directory, ".claude", "skills", "setup-etl-workspace", "SKILL.md"), "utf8");
   } finally {

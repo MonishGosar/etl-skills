@@ -10,6 +10,7 @@ const PATTERNS = [
 export function secretsFromEnv(env = process.env) {
     return [
         env.DATABRICKS_TOKEN,
+        env.DATABRICKS_CLIENT_SECRET,
         env.AIRFLOW_TOKEN,
         env.AIRFLOW_PASSWORD,
         env.DBT_CLOUD_TOKEN,

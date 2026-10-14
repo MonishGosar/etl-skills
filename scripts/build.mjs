@@ -5,7 +5,7 @@ import ts from "typescript";
 const packageRoot = resolve(import.meta.dirname, "..");
 const outputRoot = resolve(packageRoot, "dist");
 const entries = [
-  "client", "core", "databricks-adapter", "redact", "diagnosis", "dbt-adapter",
+  "client", "core", "databricks-auth", "unity-catalog", "databricks-adapter", "redact", "diagnosis", "dbt-adapter",
   "airflow-client", "airflow-adapter", "capabilities", "mcp", "install-skills", "setup",
 ];
 
