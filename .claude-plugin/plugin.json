@@ -1,7 +1,7 @@
 {
   "name": "etl-agent-tools",
   "version": "0.2.0-beta.1",
-  "description": "Read-only Databricks inspection over MCP with portable diagnosis and guarded repair workflows.",
+  "description": "Read-only Databricks, dbt artifact, and Airflow inspection over MCP, with portable diagnosis and guarded Databricks repair workflows.",
   "author": { "name": "MonishGosar", "url": "https://github.com/MonishGosar" },
   "repository": "https://github.com/MonishGosar/etl-skills",
   "license": "MIT",

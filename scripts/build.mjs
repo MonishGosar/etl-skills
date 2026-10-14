@@ -4,7 +4,10 @@ import ts from "typescript";
 
 const packageRoot = resolve(import.meta.dirname, "..");
 const outputRoot = resolve(packageRoot, "dist");
-const entries = ["client", "core", "databricks-adapter", "mcp", "install-skills", "setup"];
+const entries = [
+  "client", "core", "databricks-adapter", "redact", "diagnosis", "dbt-adapter",
+  "airflow-client", "airflow-adapter", "capabilities", "mcp", "install-skills", "setup",
+];
 
 await rm(outputRoot, { recursive: true, force: true });
 await mkdir(outputRoot, { recursive: true });

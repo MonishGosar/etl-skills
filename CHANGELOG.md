@@ -1,5 +1,20 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- Read-only dbt failure diagnosis from local `run_results.json`, `manifest.json`, and optional `dbt.log`.
+- Read-only Airflow DAG run, task instance, and task log diagnosis through the stable REST API (`v1` or `v2`, bearer or basic auth).
+- `etl_diagnose`, which returns a root-cause brief with the failed node or task, a scrubbed error excerpt, upstream and downstream impact, a cause category, and a suggested next step.
+- dbt and Airflow actions on `etl_inspect`.
+- `etl_capabilities` now reports Databricks, dbt, and Airflow configuration and read-only operations.
+
+### Changed
+
+- The diagnose-pipeline skill covers Databricks, dbt, and Airflow.
+- Harness setup forwards dbt and Airflow environment variable names and still does not write secret values.
+
 ## 0.2.0-beta.1 - 2026-09-07
 
 ### Added

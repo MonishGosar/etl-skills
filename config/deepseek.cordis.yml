@@ -14,3 +14,13 @@
           DATABRICKS_WAREHOUSE_ID: !!js process.env.DATABRICKS_WAREHOUSE_ID
           DATABRICKS_CATALOG: !!js process.env.DATABRICKS_CATALOG
           DATABRICKS_SCHEMA: !!js process.env.DATABRICKS_SCHEMA
+          DBT_ARTIFACTS_DIR: !!js process.env.DBT_ARTIFACTS_DIR
+          DBT_PROJECT_DIR: !!js process.env.DBT_PROJECT_DIR
+          DBT_LOG_PATH: !!js process.env.DBT_LOG_PATH
+          AIRFLOW_BASE_URL: !!js process.env.AIRFLOW_BASE_URL
+          AIRFLOW_API_VERSION: !!js process.env.AIRFLOW_API_VERSION
+          AIRFLOW_AUTH_MODE: !!js process.env.AIRFLOW_AUTH_MODE
+          AIRFLOW_TOKEN: !!js process.env.AIRFLOW_TOKEN
+          AIRFLOW_USERNAME: !!js process.env.AIRFLOW_USERNAME
+          AIRFLOW_PASSWORD: !!js process.env.AIRFLOW_PASSWORD
+          AIRFLOW_ENVIRONMENT: !!js process.env.AIRFLOW_ENVIRONMENT

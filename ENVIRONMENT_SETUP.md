@@ -7,9 +7,10 @@ This guide explains which values a user needs, where to obtain them, and when to
 | Provider | Status in this repository | What works now |
 | --- | --- | --- |
 | Databricks | Implemented | Read-only MCP inspection for supported harnesses; guarded SQL, job, pipeline, and repair operations in Pi |
-| Airflow | Planned | Environment contract proposed below; no adapter is shipped |
+| Airflow | Implemented, read-only | DAG run, task instance, and task log diagnosis through the stable REST API. Trigger, clear, retry, and managed-cloud auth are not shipped |
+| dbt Core | Implemented, read-only | Local `run_results.json`, `manifest.json`, and optional `dbt.log` diagnosis. dbt is not executed |
 | Snowflake | Planned | Environment contract proposed below; no adapter is shipped |
-| dbt Cloud/Core | Future | No adapter is shipped |
+| dbt Cloud | Future | No adapter is shipped |
 | AWS Glue | Future | No adapter is shipped |
 | BigQuery/Dataform | Future | No adapter is shipped |
 | Azure Data Factory/Fabric | Future | No adapter is shipped |
@@ -102,21 +103,40 @@ $env:SNOWFLAKE_SCHEMA = "VALIDATION"
 
 References: [Snowflake account identifiers](https://docs.snowflake.com/en/user-guide/admin-account-identifier), [Snowflake key-pair authentication](https://docs.snowflake.com/en/user-guide/key-pair-auth), [Snowflake connection parameters](https://docs.snowflake.com/en/developer-guide/python-connector/python-connector-api#connect).
 
-## Apache Airflow (planned contract)
+## dbt Core (implemented, read-only)
 
-Airflow authentication is deployment-specific. First identify the Airflow version, base URL, and configured auth manager with the platform owner. Airflow 2 commonly exposes stable API v1. Airflow 3 exposes public API v2 and obtains JWTs through an auth-manager endpoint. Managed Airflow services can require cloud identity instead of a reusable Airflow token.
+The adapter reads artifacts that dbt has already written. It does not invoke dbt, read `profiles.yml`, or submit warehouse SQL.
+
+| Variable | Required when | Where to get it | Secret |
+| --- | --- | --- | --- |
+| `DBT_ARTIFACTS_DIR` | Diagnosing a dbt run without passing `artifacts_dir` | Directory that contains `run_results.json` and `manifest.json`, usually the project's `target` directory after `dbt build` or `dbt run` | No |
+| `DBT_PROJECT_DIR` | Alternative to `DBT_ARTIFACTS_DIR` | dbt project root. The adapter reads `<project>/target` | No |
+| `DBT_LOG_PATH` | Optional log excerpt | Path to `dbt.log`. If unset, the adapter looks for `dbt.log` in the artifacts directory and `logs/dbt.log` under `DBT_PROJECT_DIR` | No. The file can contain secrets; excerpts are scrubbed and capped |
+
+Pass `artifacts_dir` to `etl_diagnose` when the failing run lives outside the configured directory. The server reads only `run_results.json`, `manifest.json`, and `dbt.log` inside that directory, and refuses a symlink that resolves outside it.
+
+```powershell
+$env:DBT_ARTIFACTS_DIR = "C:\analytics\target"
+$env:DBT_LOG_PATH = "C:\analytics\logs\dbt.log"
+```
+
+## Apache Airflow (implemented, read-only)
+
+Airflow authentication is deployment-specific. Identify the Airflow version, base URL, and configured auth manager with the platform owner. Airflow 2 commonly exposes stable API v1. Airflow 3 exposes public API v2 and obtains JWTs through an auth-manager endpoint. This release reads DAG runs, task instances, and task logs. It does not trigger, clear, retry, pause, or backfill.
+
+Set `AIRFLOW_API_VERSION` explicitly. The adapter does not guess or upgrade the version. Bearer and HTTP basic authentication are implemented. `aws-mwaa` and `google-iap` fail closed with an error instead of guessing a token.
 
 | Variable | Required when | Where to get it | Secret |
 | --- | --- | --- | --- |
 | `AIRFLOW_BASE_URL` | Every operation | Copy the deployment's web/API origin from the platform owner. Store only the origin; the adapter adds `/api/v1` or `/api/v2`. | No |
 | `AIRFLOW_API_VERSION` | Setup | Determine from the deployed Airflow major version and enabled public endpoint. Use `v1` or `v2`; do not auto-upgrade production behavior. | No |
-| `AIRFLOW_AUTH_MODE` | Setup | Ask which auth manager or managed-service flow protects the API. Proposed values: `bearer`, `basic`, `aws-mwaa`, or `google-iap`. | No |
+| `AIRFLOW_AUTH_MODE` | Setup | Use `bearer` or `basic`. `aws-mwaa` and `google-iap` are recognized and rejected in this release. | No |
 | `AIRFLOW_TOKEN` | Bearer/JWT mode | Obtain it from the configured auth manager. For Airflow 3, this is generally returned by `/auth/token` and expires. | Yes |
 | `AIRFLOW_USERNAME` | Basic or token exchange | Obtain a dedicated least-privilege API user from the Airflow administrator. | No |
 | `AIRFLOW_PASSWORD` | Basic or token exchange | Set for the dedicated API user and keep it in a secret manager. | Yes |
 | `AIRFLOW_ENVIRONMENT` | Evidence labeling | Choose a stable label such as `sandbox` or `staging`; this is local metadata, not an Airflow credential. | No |
 
-The future adapter should support one auth mode at a time. For Amazon MWAA, use the normal AWS credential chain and the environment name rather than inventing a long-lived `AIRFLOW_TOKEN`. For Cloud Composer, use Google Application Default Credentials and the environment's authenticated endpoint.
+Use one auth mode at a time. Amazon MWAA and Cloud Composer identity flows are not implemented. For those deployments, mint a short-lived bearer token outside this package or wait for a later auth mode. HTTP is accepted only for `localhost` and `127.0.0.1`; every other base URL must be HTTPS with no path, query, or embedded credentials.
 
 ```powershell
 $env:AIRFLOW_BASE_URL = "https://airflow-sandbox.example.com"
@@ -134,8 +154,7 @@ These names are planning guidance and are not read by the package yet.
 
 | Provider | Likely non-secret selectors | Preferred credential source |
 | --- | --- | --- |
-| dbt Cloud | `DBT_CLOUD_HOST`, `DBT_CLOUD_ACCOUNT_ID`, job/environment IDs | `DBT_CLOUD_TOKEN` from a least-privilege service token |
-| dbt Core | Project and profiles directory, target name | Existing `profiles.yml` with secret values supplied by its own environment-variable references |
+| dbt Cloud | `DBT_CLOUD_HOST`, `DBT_CLOUD_ACCOUNT_ID`, job/environment IDs | `DBT_CLOUD_TOKEN` from a least-privilege service token. Local dbt Core artifact diagnosis is already implemented and does not use this token |
 | AWS Glue | `AWS_REGION`, Glue job/catalog identifiers | AWS SDK default credential chain, workload role, or SSO; avoid static keys when possible |
 | BigQuery/Dataform | `GOOGLE_CLOUD_PROJECT`, location, repository/workflow IDs | Application Default Credentials or workload identity |
 | Azure Data Factory/Fabric | Tenant, subscription, resource group, workspace/factory IDs | Azure Default Credential, managed identity, or service principal secret/certificate |
@@ -177,7 +196,17 @@ Claude Code project plugins can map existing variables in the plugin-root `.mcp.
       "env": {
         "DATABRICKS_HOST": "${DATABRICKS_HOST}",
         "DATABRICKS_TOKEN": "${DATABRICKS_TOKEN}",
-        "DATABRICKS_WAREHOUSE_ID": "${DATABRICKS_WAREHOUSE_ID:-}"
+        "DATABRICKS_WAREHOUSE_ID": "${DATABRICKS_WAREHOUSE_ID:-}",
+        "DBT_ARTIFACTS_DIR": "${DBT_ARTIFACTS_DIR:-}",
+        "DBT_PROJECT_DIR": "${DBT_PROJECT_DIR:-}",
+        "DBT_LOG_PATH": "${DBT_LOG_PATH:-}",
+        "AIRFLOW_BASE_URL": "${AIRFLOW_BASE_URL:-}",
+        "AIRFLOW_API_VERSION": "${AIRFLOW_API_VERSION:-}",
+        "AIRFLOW_AUTH_MODE": "${AIRFLOW_AUTH_MODE:-}",
+        "AIRFLOW_TOKEN": "${AIRFLOW_TOKEN:-}",
+        "AIRFLOW_USERNAME": "${AIRFLOW_USERNAME:-}",
+        "AIRFLOW_PASSWORD": "${AIRFLOW_PASSWORD:-}",
+        "AIRFLOW_ENVIRONMENT": "${AIRFLOW_ENVIRONMENT:-}"
       }
     }
   }
@@ -190,7 +219,7 @@ Codex can forward selected ambient variables from project `.codex/config.toml`:
 [mcp_servers.etl]
 command = "etl-agent-tools-mcp"
 args = ["--read-only"]
-env_vars = ["DATABRICKS_HOST", "DATABRICKS_TOKEN", "DATABRICKS_WAREHOUSE_ID"]
+env_vars = ["DATABRICKS_HOST", "DATABRICKS_TOKEN", "DATABRICKS_WAREHOUSE_ID", "DBT_ARTIFACTS_DIR", "DBT_PROJECT_DIR", "DBT_LOG_PATH", "AIRFLOW_BASE_URL", "AIRFLOW_API_VERSION", "AIRFLOW_AUTH_MODE", "AIRFLOW_TOKEN", "AIRFLOW_USERNAME", "AIRFLOW_PASSWORD", "AIRFLOW_ENVIRONMENT"]
 ```
 
 DeepSeek Harness explicitly forwards credential-shaped variables because its MCP client scrubs them from the ambient environment by default:
@@ -208,6 +237,16 @@ DeepSeek Harness explicitly forwards credential-shaped variables because its MCP
           DATABRICKS_HOST: !!js process.env.DATABRICKS_HOST
           DATABRICKS_TOKEN: !!js process.env.DATABRICKS_TOKEN
           DATABRICKS_WAREHOUSE_ID: !!js process.env.DATABRICKS_WAREHOUSE_ID
+          DBT_ARTIFACTS_DIR: !!js process.env.DBT_ARTIFACTS_DIR
+          DBT_PROJECT_DIR: !!js process.env.DBT_PROJECT_DIR
+          DBT_LOG_PATH: !!js process.env.DBT_LOG_PATH
+          AIRFLOW_BASE_URL: !!js process.env.AIRFLOW_BASE_URL
+          AIRFLOW_API_VERSION: !!js process.env.AIRFLOW_API_VERSION
+          AIRFLOW_AUTH_MODE: !!js process.env.AIRFLOW_AUTH_MODE
+          AIRFLOW_TOKEN: !!js process.env.AIRFLOW_TOKEN
+          AIRFLOW_USERNAME: !!js process.env.AIRFLOW_USERNAME
+          AIRFLOW_PASSWORD: !!js process.env.AIRFLOW_PASSWORD
+          AIRFLOW_ENVIRONMENT: !!js process.env.AIRFLOW_ENVIRONMENT
 ```
 
 Commit variable names and launch configuration only. Set the values outside the repository before starting the harness.

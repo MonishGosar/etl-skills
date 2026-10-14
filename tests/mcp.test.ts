@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { once } from "node:events";
-import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { spawn } from "node:child_process";
@@ -9,10 +9,24 @@ import { test } from "node:test";
 
 type RpcResponse = { id?: number; result?: any; error?: unknown };
 
-function startMcp(args: string[] = []) {
+function startMcp(args: string[] = [], extra: NodeJS.ProcessEnv = {}) {
   const child = spawn(process.execPath, ["dist/mcp.js", ...args], {
     cwd: process.cwd(),
-    env: { ...process.env, DATABRICKS_HOST: "", DATABRICKS_TOKEN: "" },
+    env: {
+      ...process.env,
+      DATABRICKS_HOST: "",
+      DATABRICKS_TOKEN: "",
+      DBT_ARTIFACTS_DIR: "",
+      DBT_PROJECT_DIR: "",
+      DBT_LOG_PATH: "",
+      AIRFLOW_BASE_URL: "",
+      AIRFLOW_API_VERSION: "",
+      AIRFLOW_AUTH_MODE: "",
+      AIRFLOW_TOKEN: "",
+      AIRFLOW_USERNAME: "",
+      AIRFLOW_PASSWORD: "",
+      ...extra,
+    },
     stdio: ["pipe", "pipe", "pipe"],
   });
   const lines = createInterface({ input: child.stdout });
@@ -52,16 +66,57 @@ test("stdio MCP server exposes only the portable read tools", async () => {
     const listed = await mcp.request(2, "tools/list", {});
     assert.deepEqual(
       listed.result.tools.map((tool: { name: string }) => tool.name),
-      ["etl_capabilities", "etl_inspect", "etl_query_status"],
+      ["etl_capabilities", "etl_inspect", "etl_query_status", "etl_diagnose"],
     );
     assert.ok(listed.result.tools.every((tool: { annotations?: { readOnlyHint?: boolean } }) => tool.annotations?.readOnlyHint));
 
     const called = await mcp.request(3, "tools/call", { name: "etl_capabilities", arguments: {} });
     assert.equal(called.result.isError, undefined);
     assert.equal(called.result.structuredContent.data.mode, "read-only");
-    assert.deepEqual(called.result.structuredContent.data.operations, ["inspect", "query_status"]);
+    const providers = called.result.structuredContent.data.providers;
+    assert.deepEqual(providers.find((provider: { provider: string }) => provider.provider === "databricks").operations, ["inspect", "query_status"]);
+    assert.equal(providers.find((provider: { provider: string }) => provider.provider === "databricks").configured, false);
+    assert.deepEqual(providers.find((provider: { provider: string }) => provider.provider === "dbt").operations, ["inspect", "diagnose"]);
+    assert.deepEqual(providers.find((provider: { provider: string }) => provider.provider === "airflow").unavailableMutations, ["trigger", "clear", "retry", "pause", "backfill"]);
   } finally {
     mcp.child.kill();
+  }
+});
+
+test("MCP diagnose reads local dbt artifacts and does not return compiled SQL", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "etl-mcp-dbt-"));
+  await writeFile(join(directory, "run_results.json"), JSON.stringify({
+    metadata: { invocation_id: "inv-mcp" },
+    results: [
+      { unique_id: "model.proj.orders", status: "error", message: "Database Error in model orders", compiled_code: "select secret_password from orders" },
+      { unique_id: "model.proj.metrics", status: "skipped", message: "" },
+    ],
+  }));
+  await writeFile(join(directory, "manifest.json"), JSON.stringify({
+    nodes: {
+      "model.proj.orders": { name: "orders", resource_type: "model", original_file_path: "models/orders.sql" },
+      "model.proj.metrics": { name: "metrics", resource_type: "model", original_file_path: "models/metrics.sql" },
+    },
+    child_map: { "model.proj.orders": ["model.proj.metrics"] },
+  }));
+  const mcp = startMcp(["--read-only"], { DBT_ARTIFACTS_DIR: directory });
+  try {
+    await mcp.request(1, "initialize", {
+      protocolVersion: "2025-11-25",
+      capabilities: {},
+      clientInfo: { name: "etl-agent-tools-test", version: "1.0.0" },
+    });
+    mcp.send({ jsonrpc: "2.0", method: "notifications/initialized" });
+    const called = await mcp.request(2, "tools/call", { name: "etl_diagnose", arguments: { provider: "dbt" } });
+    assert.equal(called.result.isError, undefined);
+    assert.equal(called.result.structuredContent.provider, "dbt");
+    assert.equal(called.result.structuredContent.data.failed.id, "model.proj.orders");
+    assert.equal(called.result.structuredContent.data.likelyCause.category, "database");
+    assert.equal(called.result.structuredContent.data.impact.downstream[0].id, "model.proj.metrics");
+    assert.doesNotMatch(JSON.stringify(called.result), /secret_password/);
+  } finally {
+    mcp.child.kill();
+    await rm(directory, { recursive: true, force: true });
   }
 });
 
@@ -85,6 +140,7 @@ test("skill installer copies every shared skill into an agents directory", async
     assert.match(setup, /name: setup-etl-workspace/);
     const diagnose = await readFile(join(target, "diagnose-pipeline", "SKILL.md"), "utf8");
     assert.match(diagnose, /etl_inspect/);
+    assert.match(diagnose, /etl_diagnose/);
   } finally {
     await rm(directory, { recursive: true, force: true });
   }

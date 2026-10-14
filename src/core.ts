@@ -1,4 +1,4 @@
-export type ProviderName = "databricks";
+export type ProviderName = "databricks" | "dbt" | "airflow";
 
 export type OperationClass = "read" | "execute" | "control" | "repair";
 
