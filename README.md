@@ -1,10 +1,61 @@
 # ETL Agent Tools
 
-Portable ETL inspection, diagnosis, and guarded repair workflows for Pi, Claude Code, Codex, DeepSeek Harness, and other MCP clients.
+Investigate Databricks, dbt, and Airflow incidents from Pi, Claude Code, Codex, DeepSeek Harness, and other MCP clients.
 
 This package is the diagnosis and safe-repair layer on top of Databricks, and it also reads local dbt artifacts and Airflow DAG runs. Use Databricks managed MCP servers and Databricks agent skills for Genie, ad hoc SQL, Unity Catalog functions, and platform development. Use etl-agent-tools for failed-run evidence, Unity Catalog lineage and grants, optional job cost, dbt and Airflow diagnosis, and interactive Pi repair.
 
 Version `0.2.0-beta.1` adds a bundled read-only stdio MCP server. It inspects Databricks, reads local dbt artifacts, and reads Airflow DAG runs through the stable REST API. Pi also receives guarded Databricks execution tools; every arbitrary SQL submission, pipeline action, job action, and repair requires interactive confirmation. Databricks authentication is a personal access token or an OAuth machine-to-machine service principal.
+
+## Who this helps
+
+Data engineers investigating failed transformations, orchestration errors, or warehouse access problems from an existing coding agent. The current package gathers bounded evidence, classifies failures, and exposes immediate dependencies. The MCP stays read-only; interactive Pi can submit guarded Databricks operations.
+
+The product direction is a complete incident workflow: **identify the causal change, propose a reviewable patch, and prove that repaired outputs reconcile**. Automatic source-code patches, sandbox repair validation, last-successful-run comparison, and silent data-quality investigation are planned work.
+
+## Measured results
+
+The repository benchmark uses 54 authored incidents through the production dbt adapter and mocked Airflow GET responses.
+
+| Cause-category accuracy | Before | After |
+| --- | --- | --- |
+| Development cases | 23/36 | 36/36 |
+| Reserved wording cases | 13/18 | 18/18 |
+| Combined | 36/54 (66.7%) | 54/54 (100%) |
+
+The tested redaction, primary-subject, immediate-lineage and read-only checks pass in both versions. The reserved cases share authored error families with development data; they are not an independent project holdout. These results measure broad error categories, not end-to-end root-cause discovery or validated repair. Live Databricks behavior is outside this suite.
+
+```sh
+npm ci
+npm run benchmark -- --split dev --gate
+npm run benchmark -- --split holdout --gate
+```
+
+See [benchmark methodology, raw reports and regression gates](benchmarks/README.md).
+
+## Development priorities
+
+Existing products already investigate data/code changes and lineage, expose MCP tools, and advertise proposed/verified fixes; see [Monte Carlo's troubleshooting documentation](https://docs.getmontecarlo.com/docs/troubleshooting-agent). The opportunity to test is a focused workflow that fits a small team's existing coding agent and resolves a specific class of incidents with less effort. Competitive advantage remains a hypothesis until comparable evaluations and customer pilots support it.
+
+The following capabilities are **planned**, rather than features established by the classification benchmark:
+
+| Priority | Build next | Evidence required |
+| --- | --- | --- |
+| 1 | Compare the failed run with the last successful run: source schema, code/Git changes, configuration, and execution history. Link Airflow task, dbt model, warehouse table and affected consumers. | Identify the first causal change with source evidence on multi-failure incidents, including misleading downstream errors. |
+| 2 | Reproduce the incident in a disposable sandbox, propose a minimal patch, and validate the repaired output. Keep remote mutations behind their operation-specific confirmation gates. | Passing transformation tests plus reconciled row counts, unique transaction IDs and business totals; record failed repairs and unsafe actions. |
+| 3 | Investigate successful jobs with incorrect outputs: duplicate transactions, stale inputs, missing partitions and faulty incremental logic. | Detect the injected data error and restore the expected data, even when job status is green. |
+| 4 | Save reviewed incident evidence, accepted fixes and validation outcomes for later investigations. | Improve resolution on different incidents and projects without repeating an obsolete fix or exposing secrets. |
+
+Start with **transaction reconciliation across dbt, Airflow and Databricks**: duplicate or missing transactions must reconcile after a proposed fix. Complete this workflow across the supported systems before expanding the provider list in [FUTURE_WORK.md](FUTURE_WORK.md).
+
+## How we would demonstrate an advantage
+
+Create an initial evaluation of at least 100 independently reviewed incidents across three or more projects. Keep entire projects out of development, hide accepted causes/fixes, and include sanitized historical incidents alongside injected failures.
+
+Compare the same model, repository access and time/token budget under logs-only, standard repository/provider tools, and ETL Agent Tools conditions. Score causal evidence and **correctly repaired, reconciled incidents** separately from category accuracy. Report unresolved cases/timeouts, median time to a validated fix, engineer edits, model cost per validated fix, and unsafe actions.
+
+A proposed first-pilot goal is 25% lower median time to a validated fix than the strongest baseline, without reducing verified resolution success or weakening approval gates. This is a target, not a measured result. Claims against a commercial product require running comparable cases against that product; the current synthetic score does not establish market superiority.
+
+Before a commercial pilot, resolve the known Pi SDK type incompatibilities documented in [benchmark validation](benchmarks/README.md) and complete the live compatibility checks in [RELEASE_PLAN.md](RELEASE_PLAN.md).
 
 ## Guided setup
 
@@ -193,6 +244,3 @@ npm.cmd run verify
 The verification command builds both bundled executables, type-checks source, runs mocked HTTP and MCP protocol tests, and inspects the npm tarball. Tests do not require Databricks credentials.
 
 See [RELEASE_PLAN.md](RELEASE_PLAN.md) for remaining live compatibility checks and release gates. Provider expansion is tracked separately in [FUTURE_WORK.md](FUTURE_WORK.md). User-visible changes are recorded in [CHANGELOG.md](CHANGELOG.md).
-
-Repeatable incident scoring, baseline/improved results, and CI regression gates
-are documented in [benchmarks/README.md](benchmarks/README.md).
