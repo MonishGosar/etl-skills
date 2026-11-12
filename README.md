@@ -8,9 +8,9 @@ Version `0.2.0-beta.1` adds a bundled read-only stdio MCP server. It inspects Da
 
 ## Who this helps
 
-Data engineers investigating failed transformations, orchestration errors, or warehouse access problems from an existing coding agent. The current package gathers bounded evidence, classifies failures, and exposes immediate dependencies. The MCP stays read-only; interactive Pi can submit guarded Databricks operations.
+Data engineers investigating failed transformations, orchestration errors, or warehouse access problems from an existing coding agent. The current package gathers bounded evidence, classifies failures, selects upstream-most failing dbt candidates, and compares current dbt artifacts with a caller-supplied successful baseline. The MCP stays read-only; interactive Pi can submit guarded Databricks operations.
 
-The product direction is a complete incident workflow: **identify the causal change, propose a reviewable patch, and prove that repaired outputs reconcile**. Automatic source-code patches, sandbox repair validation, last-successful-run comparison, and silent data-quality investigation are planned work.
+The product direction is a complete incident workflow: **identify the causal change, propose a reviewable patch, and prove that repaired outputs reconcile**. A local dbt/DuckDB demonstration now exercises this flow with a supplied patch. Autonomous patch generation, automatic baseline discovery, live comparisons across providers and general-purpose sandbox repair orchestration remain planned work.
 
 ## Measured results
 
@@ -32,16 +32,38 @@ npm run benchmark -- --split holdout --gate
 
 See [benchmark methodology, raw reports and regression gates](benchmarks/README.md).
 
+## Compare a failing dbt run with a successful baseline
+
+`etl_compare_runs` reads `manifest.json` and `run_results.json` from two separate directories. It checks baseline success, project/invocation consistency and timestamp ordering when metadata exists. It reports code/configuration fingerprint, declared column metadata and dependency changes, ranked by their relationship to the selected failing subject. Raw SQL/configuration values are not returned.
+
+```json
+{"artifacts_dir":"/project/current/target","baseline_artifacts_dir":"/project/last-good/target"}
+```
+
+An optional `node_id` focuses the comparison, including on a successful model with failing downstream data tests. The caller chooses the baseline; the tool does not discover the latest successful invocation. Missing metadata is reported as uncertainty. Declared manifest columns are not a live warehouse schema snapshot, and observed changes are investigation candidates until reproduction and validation support causality.
+
+### Local transaction reconciliation demo
+
+```sh
+npm ci
+npm run build
+uv run --no-project --with dbt-duckdb==1.11.1 --with dbt-core==1.12.6 --with duckdb==2.0.0 python examples/transaction-reconciliation/run_demo.py --output benchmark-output/reconciliation.json
+```
+
+The demo creates a disposable DuckDB database and its own dbt profile, injects an append-only incremental defect, compares the artifacts, and applies the supplied `unique_key`/`delete+insert` fixture patch. The observed bad run succeeds at model execution but produces **6 rows / 6,000 cents** and fails data tests. The repaired run restores **3 unique transactions / 3,000 cents**; a replay preserves those results. CI runs this demonstration separately from the read-only MCP.
+
+See [the recorded report](benchmarks/results/reconciliation-demo.json) and the [documented DuckDB incremental strategies](https://docs.getdbt.com/reference/resource-configs/duckdb-configs). This demonstrates a known local repair, not autonomous patch generation, customer repair accuracy, remote warehouse execution or a production rollback.
+
 ## Development priorities
 
 Existing products already investigate data/code changes and lineage, expose MCP tools, and advertise proposed/verified fixes; see [Monte Carlo's troubleshooting documentation](https://docs.getmontecarlo.com/docs/troubleshooting-agent). The opportunity to test is a focused workflow that fits a small team's existing coding agent and resolves a specific class of incidents with less effort. Competitive advantage remains a hypothesis until comparable evaluations and customer pilots support it.
 
-The following capabilities are **planned**, rather than features established by the classification benchmark:
+The following are the next steps beyond the implemented dbt artifact comparison and local reconciliation demo:
 
 | Priority | Build next | Evidence required |
 | --- | --- | --- |
-| 1 | Compare the failed run with the last successful run: source schema, code/Git changes, configuration, and execution history. Link Airflow task, dbt model, warehouse table and affected consumers. | Identify the first causal change with source evidence on multi-failure incidents, including misleading downstream errors. |
-| 2 | Reproduce the incident in a disposable sandbox, propose a minimal patch, and validate the repaired output. Keep remote mutations behind their operation-specific confirmation gates. | Passing transformation tests plus reconciled row counts, unique transaction IDs and business totals; record failed repairs and unsafe actions. |
+| 1 | Extend dbt comparison to live source schemas, Git revisions and execution history across Airflow/Databricks. Automatically identify a compatible successful baseline. | Identify the first causal change with source evidence on multi-failure incidents, including misleading downstream errors. |
+| 2 | Extend the supplied-patch demonstration to agent-proposed patches and general sandbox orchestration. Keep remote mutations behind their operation-specific confirmation gates. | Passing transformation tests plus reconciled row counts, unique transaction IDs and business totals; record failed repairs and unsafe actions. |
 | 3 | Investigate successful jobs with incorrect outputs: duplicate transactions, stale inputs, missing partitions and faulty incremental logic. | Detect the injected data error and restore the expected data, even when job status is green. |
 | 4 | Save reviewed incident evidence, accepted fixes and validation outcomes for later investigations. | Improve resolution on different incidents and projects without repeating an obsolete fix or exposing secrets. |
 
@@ -55,7 +77,7 @@ Compare the same model, repository access and time/token budget under logs-only,
 
 A proposed first-pilot goal is 25% lower median time to a validated fix than the strongest baseline, without reducing verified resolution success or weakening approval gates. This is a target, not a measured result. Claims against a commercial product require running comparable cases against that product; the current synthetic score does not establish market superiority.
 
-Before a commercial pilot, resolve the known Pi SDK type incompatibilities documented in [benchmark validation](benchmarks/README.md) and complete the live compatibility checks in [RELEASE_PLAN.md](RELEASE_PLAN.md).
+The Pi SDK result-type incompatibilities are resolved by JSON-normalized structured results and pinned development SDKs. Complete the remaining live compatibility checks in [RELEASE_PLAN.md](RELEASE_PLAN.md) before a commercial pilot.
 
 ## Guided setup
 
@@ -75,10 +97,10 @@ The harness-specific sections below are manual alternatives and troubleshooting 
 | Harness | Skills | Read-only MCP tools | Guarded mutations |
 | --- | --- | --- | --- |
 | Pi | Packaged automatically | `etl_inspect`, `etl_uc_context`, `etl_diagnose`, plus `dbx_inspect` alias | `dbx_query`, `dbx_pipeline`, `dbx_run`, `dbx_repair` |
-| Claude Code | Claude plugin | `etl_capabilities`, `etl_inspect`, `etl_uc_context`, `etl_query_status`, `etl_diagnose` | Unavailable in this beta |
-| Codex | Install into `.agents/skills` | `etl_capabilities`, `etl_inspect`, `etl_uc_context`, `etl_query_status`, `etl_diagnose` | Unavailable in this beta |
-| DeepSeek Harness | Install into `.agents/skills` | `etl_capabilities`, `etl_inspect`, `etl_uc_context`, `etl_query_status`, `etl_diagnose` | Unavailable in this beta |
-| Other MCP clients | Client-specific | `etl_capabilities`, `etl_inspect`, `etl_uc_context`, `etl_query_status`, `etl_diagnose` | Unavailable in this beta |
+| Claude Code | Claude plugin | `etl_capabilities`, `etl_inspect`, `etl_uc_context`, `etl_query_status`, `etl_diagnose`, `etl_compare_runs` | Unavailable in this beta |
+| Codex | Install into `.agents/skills` | `etl_capabilities`, `etl_inspect`, `etl_uc_context`, `etl_query_status`, `etl_diagnose`, `etl_compare_runs` | Unavailable in this beta |
+| DeepSeek Harness | Install into `.agents/skills` | `etl_capabilities`, `etl_inspect`, `etl_uc_context`, `etl_query_status`, `etl_diagnose`, `etl_compare_runs` | Unavailable in this beta |
+| Other MCP clients | Client-specific | `etl_capabilities`, `etl_inspect`, `etl_uc_context`, `etl_query_status`, `etl_diagnose`, `etl_compare_runs` | Unavailable in this beta |
 
 Databricks inspection, local dbt artifact diagnosis, and read-only Airflow diagnosis are implemented. Snowflake, dbt Cloud, and managed Airflow identity flows in [ENVIRONMENT_SETUP.md](ENVIRONMENT_SETUP.md) are not read by this release.
 
@@ -212,7 +234,7 @@ npm.cmd install --global etl-agent-tools@0.2.0-beta.1
 etl-agent-tools-install-skills --target .agents/skills
 ```
 
-The DeepSeek MCP client intentionally scrubs credential-shaped ambient variables. The supplied overlay explicitly forwards Databricks variables, including the OAuth client secret, plus dbt and Airflow variables, to the child server. Start DeepSeek Harness with the resulting patch and confirm that `mcp__etl__etl_capabilities`, `mcp__etl__etl_inspect`, `mcp__etl__etl_uc_context`, `mcp__etl__etl_query_status`, and `mcp__etl__etl_diagnose` are discovered.
+The DeepSeek MCP client intentionally scrubs credential-shaped ambient variables. The supplied overlay explicitly forwards Databricks variables, including the OAuth client secret, plus dbt and Airflow variables, to the child server. Start DeepSeek Harness with the resulting patch and confirm that `mcp__etl__etl_capabilities`, `mcp__etl__etl_inspect`, `mcp__etl__etl_uc_context`, `mcp__etl__etl_query_status`, `mcp__etl__etl_diagnose`, and `mcp__etl__etl_compare_runs` are discovered.
 
 ## MCP tools
 
@@ -223,6 +245,7 @@ The DeepSeek MCP client intentionally scrubs credential-shaped ambient variables
 | `etl_uc_context` | Read lineage and grants for a failing table, and optional job cost from `system.billing` when `job_id` is set |
 | `etl_query_status` | Read an existing Databricks SQL statement and bounded result without submitting or cancelling it |
 | `etl_diagnose` | Build a root-cause brief for a dbt invocation or an Airflow DAG run: failed node or task, scrubbed error excerpt, upstream and downstream impact, cause category, and suggested next step |
+| `etl_compare_runs` | Compare current dbt artifacts with a caller-selected successful baseline; return bounded change candidates and missing-evidence notes without executing dbt, Git, SQL or repairs |
 
 Results include provider and workspace identity. Text output is capped at 24,000 characters, and oversized structured data is omitted with an explicit truncation marker. Provider error bodies are not returned because they can contain credentials or source data. Log excerpts are capped and scrubbed the same way.
 

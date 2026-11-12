@@ -50,10 +50,27 @@ unrelated runs. CI compares against the checked-in improved results and uploads
 JSON reports. Latency includes fixture IO; mocked HTTP counts are not agent tool
 calls. No model cost is estimated.
 
-Validation: 47 repository tests, packed-install verification and the benchmark
-TypeScript check pass. Full `npm run verify` remains blocked by seven existing
-Pi extension TS2322 errors with the current optional Pi SDK. The same errors
-were reproduced on the baseline checkout; this change does not fix SDK compatibility.
+The initial iteration passed 47 repository tests and packed verification but
+exposed seven pre-existing Pi SDK result-type errors. The next implementation
+normalizes structured results to JSON values and pins development SDK versions;
+full `npm run verify` now passes, including the Pi extension type check.
+
+## Change comparison and real local reconciliation
+
+`etl_compare_runs` validates coherent successful/current artifacts and reports
+code/configuration fingerprints, declared column metadata and dependencies.
+Diagnosis uses upstream-most failing candidates rather than simply the first
+failed result. Cycles and independent failures remain explicitly uncertain.
+Comparison reads no log file and executes no dbt, Git, SQL or repair command.
+
+The [dbt/DuckDB demo report](results/reconciliation-demo.json) records actual
+dbt builds: a model succeeds while faulty append logic duplicates transactions
+(6 rows, 6,000 cents); data tests detect the error. The comparison identifies the
+changed upstream model. A supplied fixture patch restores 3 unique transactions
+and 3,000 cents, with data tests and a repeated build passing. This is a known
+local integration scenario, not an autonomous repair score or a customer incident.
+See the [root README](../README.md#local-transaction-reconciliation-demo) for the
+isolated environment and pinned dependency command.
 
 ## Next iteration
 

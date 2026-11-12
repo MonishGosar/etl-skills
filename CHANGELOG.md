@@ -4,6 +4,8 @@
 
 ### Added
 
+- Read-only `etl_compare_runs` for caller-selected successful/current dbt snapshots, with identity/order checks, bounded fingerprint/column/dependency changes, upstream relationship and explicit missing-evidence notes.
+- A disposable dbt/DuckDB transaction reconciliation demo with a supplied incremental repair patch, data-test checks, totals and idempotence replay, plus CI coverage.
 - Databricks OAuth machine-to-machine authentication for a service principal client ID and secret, with in-memory token fetch and refresh. Personal access tokens remain supported. Set `DATABRICKS_AUTH` when both credential families are present.
 - Read-only `etl_uc_context` for Unity Catalog table and column lineage, explicit grants and effective permissions, and optional job cost from `system.billing` when a warehouse is configured. A section the principal cannot access returns `available: false`.
 - Guidance for using this toolkit as the diagnosis and safe-repair layer alongside Databricks managed MCP servers and Databricks agent skills.
@@ -15,6 +17,8 @@
 
 ### Changed
 
+- dbt diagnosis prefers upstream-most failing subjects and separates the primary error message from unrelated invocation-wide log errors.
+- Structured results are normalized to JSON values for Pi SDK compatibility; pinned development SDK versions make full verification reproducible.
 - The diagnose-pipeline skill covers Databricks lineage and grants, dbt, and Airflow.
 - Guided setup, harness configuration, and the environment guide accept either a personal access token or OAuth client credentials, and forward dbt and Airflow environment variable names. The installer still does not write secret values.
 

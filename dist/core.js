@@ -6,7 +6,9 @@ export async function requireApproval(gate, request) {
         throw new Error("Execution declined. No request submitted.");
 }
 export function toolResult(provider, workspace, data, limit = 24_000) {
-    const fullEnvelope = { provider, workspace, status: "ok", truncated: false, data };
+    const encoded = JSON.stringify(data ?? null);
+    const jsonData = encoded === undefined ? null : JSON.parse(encoded);
+    const fullEnvelope = { provider, workspace, status: "ok", truncated: false, data: jsonData };
     const serialized = JSON.stringify(fullEnvelope, null, 2);
     const truncated = serialized.length > limit;
     const envelope = truncated

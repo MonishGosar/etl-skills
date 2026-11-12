@@ -1,0 +1,95 @@
+{
+  "schema_version": 1,
+  "benchmark": "dbt-duckdb-reconciliation-demo-v1",
+  "versions": {
+    "dbt-core": "1.12.6",
+    "dbt-duckdb": "1.11.1",
+    "duckdb": "2.0.0"
+  },
+  "baseline": {
+    "rows": 3,
+    "distinct_transaction_ids": 3,
+    "total_cents": 3000
+  },
+  "faulty": {
+    "rows": 6,
+    "distinct_transaction_ids": 3,
+    "total_cents": 6000
+  },
+  "repaired": {
+    "rows": 3,
+    "distinct_transaction_ids": 3,
+    "total_cents": 3000
+  },
+  "replayed": {
+    "rows": 3,
+    "distinct_transaction_ids": 3,
+    "total_cents": 3000
+  },
+  "model_succeeded_during_incident": true,
+  "failed_data_tests": [
+    "test.etl_reconciliation.reconciles_transactions",
+    "test.etl_reconciliation.unique_ledger_transaction_id.5dc314b37b"
+  ],
+  "comparison": {
+    "provider": "dbt",
+    "baseline": {
+      "invocationId": "3b963d42-ba11-49d8-b63c-637a29ab3b69",
+      "generatedAt": "2026-11-12T09:31:48.652351Z",
+      "selection": "caller-supplied successful invocation; latest-success status is not auto-discovered"
+    },
+    "current": {
+      "invocationId": "f72275a1-db4d-418d-b31d-8dc6410774c2",
+      "generatedAt": "2026-11-12T09:31:52.016353Z"
+    },
+    "focusNode": "test.etl_reconciliation.reconciles_transactions",
+    "failedSubject": {
+      "kind": "node",
+      "id": "test.etl_reconciliation.reconciles_transactions",
+      "name": "reconciles_transactions",
+      "status": "fail",
+      "location": "tests/reconciles_transactions.sql"
+    },
+    "observedChangedNodes": 1,
+    "changedUpstreamNodes": 1,
+    "changes": [
+      {
+        "id": "model.etl_reconciliation.ledger",
+        "name": "ledger",
+        "relation": "upstream",
+        "kinds": [
+          "code",
+          "configuration"
+        ],
+        "columns": {
+          "added": [],
+          "removed": [],
+          "typeChanged": []
+        },
+        "references": {
+          "added": [],
+          "removed": []
+        },
+        "truncated": false,
+        "evidence": [
+          "baseline/manifest.json",
+          "current/manifest.json"
+        ]
+      }
+    ],
+    "truncated": false,
+    "notes": [
+      "Manifest changes are investigation candidates, not proof of causality or a validated repair.",
+      "Column metadata is declared dbt metadata, not a live warehouse schema snapshot."
+    ]
+  },
+  "patch": "--- faulty/ledger.sql\n+++ repaired/ledger.sql\n@@ -1,3 +1,3 @@\n-{{ config(materialized='incremental', incremental_strategy='append') }}\n+{{ config(materialized='incremental', incremental_strategy='delete+insert', unique_key='transaction_id') }}\n \n select transaction_id, amount_cents from {{ ref('transactions') }}\n",
+  "checks": {
+    "upstream_change_identified": true,
+    "dbt_tests_pass_after_patch": true,
+    "transaction_ids_unique": true,
+    "totals_reconciled": true,
+    "replay_idempotent": true
+  },
+  "limitations": "Supplied fixture patch in a disposable local DuckDB database. No autonomous patch generation, customer incident, Airflow/Databricks execution, remote repair, or production rollback is evaluated."
+}

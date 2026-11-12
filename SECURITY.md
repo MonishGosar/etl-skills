@@ -10,4 +10,6 @@ The package reads credentials from the launching process environment and does no
 
 dbt diagnosis reads only `run_results.json`, `manifest.json`, and an optional log file. A symlink that resolves outside the artifacts directory is refused. Airflow diagnosis sends GET requests only. Provider error bodies are discarded. Error excerpts and task logs are length-capped and scrubbed for credential-shaped text before they are returned.
 
+`etl_compare_runs` reads only the two manifest/run-results pairs, validates snapshot identity where metadata exists, and returns bounded change candidates. It neither reads a configured log nor executes dbt, Git, SQL or a repair. Raw code/configuration values stay out of comparison results. The reconciliation demo is a separate, explicitly invoked development script using a disposable local DuckDB database and its own profile; it is not an MCP execution path.
+
 Rotate a credential immediately if it appears in a repository, terminal transcript, issue, test fixture, or tool result.

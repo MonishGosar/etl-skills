@@ -35,7 +35,7 @@ export default function databricks(pi: ExtensionAPI) {
     id: optional(), name: optional(), path: optional(), page_token: optional(),
   });
 
-  const inspectExecute = async (_id: string, p: any, signal: AbortSignal) => {
+  const inspectExecute = async (_id: string, p: any, signal: AbortSignal | undefined) => {
     const { client, adapter } = createAdapter();
     return resultFor(client, await adapter.execute({ kind: "inspect", ...p }, { signal }));
   };
