@@ -63,3 +63,10 @@ test("oversized results bound text and structured content", () => {
   assert.ok(result.content[0].text.length <= 80);
   assert.match(result.content[0].text, /Output truncated/);
 });
+
+test("tool results serialize structured data to the same JSON contract used by Pi", () => {
+  const result = toolResult("dbt", "local", { value: 1, absent: undefined, date: new Date("2026-11-12T00:00:00Z") });
+  assert.deepEqual(result.structuredContent, JSON.parse(result.content[0].text));
+  assert.deepEqual(result.structuredContent.data, { value: 1, date: "2026-11-12T00:00:00.000Z" });
+  assert.equal(toolResult("dbt", "local", undefined).structuredContent.data, null);
+});

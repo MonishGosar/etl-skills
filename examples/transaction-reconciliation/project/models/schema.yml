@@ -1,0 +1,10 @@
+version: 2
+models:
+  - name: ledger
+    columns:
+      - name: transaction_id
+        data_type: varchar
+        data_tests: [unique, not_null]
+      - name: amount_cents
+        data_type: bigint
+        data_tests: [not_null]

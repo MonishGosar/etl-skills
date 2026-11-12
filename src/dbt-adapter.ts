@@ -1,5 +1,7 @@
 import { open, readFile, realpath, stat } from "node:fs/promises";
 import { isAbsolute, relative, resolve } from "node:path";
+import { createHash } from "node:crypto";
+import { compareDbtSnapshots } from "./dbt-comparison.js";
 import { secretsFromEnv } from "./redact.js";
 import {
   ADDITIONAL_FAILURE_LIMIT,
@@ -36,14 +38,28 @@ export type DbtNodeInfo = {
   name: string;
   resourceType?: string;
   path?: string;
+  codeHash?: string;
+  configHash?: string;
+  columns?: Map<string, string | null>;
 };
 
 export type DbtGraph = {
   present: boolean;
+  projectId?: string;
+  invocationId?: string;
   nodes: Map<string, DbtNodeInfo>;
   parents: Map<string, string[]>;
   children: Map<string, string[]>;
 };
+
+function fingerprint(value: unknown): string {
+  function canonical(item: unknown): unknown {
+    if (Array.isArray(item)) return item.map(canonical);
+    const record = asRecord(item);
+    return record ? Object.fromEntries(Object.keys(record).sort().map(key => [key, canonical(record[key])])) : item;
+  }
+  return createHash("sha256").update(JSON.stringify(canonical(value))).digest("hex");
+}
 
 export type DbtInspectAction = "run_results" | "node";
 
@@ -99,10 +115,19 @@ export function parseDbtManifest(value: unknown | undefined): DbtGraph {
       if (!node) continue;
       const sourceName = stringField(node, "source_name");
       const name = stringField(node, "name") ?? uniqueId.split(".").at(-1) ?? uniqueId;
+      const checksum = asRecord(node.checksum);
+      const rawCode = stringField(node, "raw_code") ?? stringField(node, "raw_sql");
+      const checksumHash = checksum?.name === "sha256" && typeof checksum.checksum === "string" && /^[a-f0-9]{64}$/i.test(checksum.checksum)
+        ? checksum.checksum.toLowerCase() : undefined;
+      const config = asRecord(node.config);
+      const columns = asRecord(node.columns);
       nodes.set(uniqueId, {
         name: sourceName ? `${sourceName}.${name}` : name,
         resourceType: stringField(node, "resource_type"),
         path: stringField(node, "original_file_path") ?? stringField(node, "path"),
+        codeHash: rawCode ? createHash("sha256").update(rawCode).digest("hex") : checksumHash,
+        configHash: config ? fingerprint(config) : undefined,
+        columns: columns ? new Map(Object.entries(columns).map(([key, value]) => [key, stringField(asRecord(value) ?? {}, "data_type") ?? null])) : undefined,
       });
       const depends = asRecord(node.depends_on);
       if (depends) parents.set(uniqueId, stringList(depends.nodes));
@@ -127,7 +152,24 @@ export function parseDbtManifest(value: unknown | undefined): DbtGraph {
       }
     }
   }
-  return { present: true, nodes, parents, children };
+  const metadata = asRecord(root.metadata);
+  return { present: true, nodes, parents, children,
+    projectId: metadata ? stringField(metadata, "project_id") : undefined,
+    invocationId: metadata ? stringField(metadata, "invocation_id") : undefined };
+}
+
+export function reachableNodes(start: string, edges: Map<string, string[]>, onCycleToStart?: () => void): Set<string> {
+  const visited = new Set<string>([start]);
+  const pending = [...(edges.get(start) ?? [])];
+  while (pending.length) {
+    const id = pending.pop()!;
+    if (id === start) { onCycleToStart?.(); continue; }
+    if (visited.has(id)) continue;
+    visited.add(id);
+    for (const next of edges.get(id) ?? []) pending.push(next);
+  }
+  visited.delete(start);
+  return visited;
 }
 
 function displayName(graph: DbtGraph, uniqueId: string): string {
@@ -183,7 +225,10 @@ export function diagnoseDbtInvocation(input: {
     };
   }
 
-  const primary = failed[0];
+  const failedIds = new Set(failed.map(result => result.uniqueId));
+  let cyclic = false;
+  const rootCandidates = failed.filter(result => ![...reachableNodes(result.uniqueId, input.graph.parents, () => { cyclic = true; })].some(id => failedIds.has(id)));
+  const primary = cyclic ? failed[0] : rootCandidates[0] ?? failed[0];
   const node = input.graph.nodes.get(primary.uniqueId);
   const excerpt = failureExcerpt(primary.message, input.log, secrets);
   if (input.logTruncated || excerpt.truncated) {
@@ -193,18 +238,22 @@ export function diagnoseDbtInvocation(input: {
   } else {
     evidence.push({ source: "dbt.log", observation: input.log ? "dbt.log did not add a separate error beyond run_results.json." : "dbt.log was not read." });
   }
-  const cause = classifyFailure({ message: excerpt.excerpt, status: primary.status, resourceType: node?.resourceType });
+  const causeText = primary.message.trim() ? failureExcerpt(primary.message, undefined, secrets).excerpt : failed.length === 1 ? excerpt.excerpt : "";
+  const cause = classifyFailure({ message: causeText, status: primary.status, resourceType: node?.resourceType });
+  if (!primary.message.trim() && failed.length > 1) evidence.push({ source: "dbt.log", observation: "The primary subject has no direct error message. Invocation-wide log errors are not attributed to this subject." });
   const upstream = capRefs(refsFor(input.graph.parents.get(primary.uniqueId) ?? [], input.graph, statusById));
   const downstream = capRefs(refsFor(input.graph.children.get(primary.uniqueId) ?? [], input.graph, statusById));
-  const additional = failed.slice(1, 1 + ADDITIONAL_FAILURE_LIMIT).map(result => ({
+  const additional = failed.filter(result => result !== primary).slice(0, ADDITIONAL_FAILURE_LIMIT).map(result => ({
     id: result.uniqueId,
     name: displayName(input.graph, result.uniqueId),
     status: result.status,
   }));
-  if (failed.length > 1) {
+  if (failed.length > 1 || cyclic) {
     evidence.push({
       source: "run_results.json",
-      observation: `${failed.length} nodes failed. The brief uses the first error or fail result as the primary node.`,
+      observation: !cyclic && rootCandidates.length
+        ? `${failed.length} nodes failed; ${rootCandidates.length} upstream-most failing candidates remain. The first candidate in artifact order is the primary subject, not proof of a unique cause.`
+        : `${failed.length} nodes failed in a cyclic or incomplete graph. Primary subject falls back to artifact order; causal ordering is unverified.`,
     });
   }
   evidence.push({
@@ -334,7 +383,7 @@ export class DbtAdapter {
     return new DbtAdapter(resolveDbtArtifactsDir(env, artifactsDir), env);
   }
 
-  private async load(signal?: AbortSignal): Promise<{ invocation: DbtInvocation; graph: DbtGraph; manifestNote?: string; log?: string; logTruncated: boolean }> {
+  private async load(signal?: AbortSignal, includeLog = true): Promise<{ invocation: DbtInvocation; graph: DbtGraph; manifestNote?: string; log?: string; logTruncated: boolean }> {
     if (signal?.aborted) throw new Error("dbt artifact read interrupted.");
     const root = await directoryRealPath(this.artifactsDir);
     const resultsPath = await artifactPath(root, "run_results.json");
@@ -359,7 +408,11 @@ export class DbtAdapter {
         }
       }
     }
-    const log = await configuredLog(this.env, root);
+    if (graph.invocationId && invocation.invocationId && graph.invocationId !== invocation.invocationId) {
+      throw new Error("Manifest and run results belong to different invocations.");
+    }
+    const log = includeLog ? await configuredLog(this.env, root) : undefined;
+    if (signal?.aborted) throw new Error("dbt artifact read interrupted.");
     return { invocation, graph, manifestNote, log: log?.text, logTruncated: log?.truncated ?? false };
   }
 
@@ -378,6 +431,23 @@ export class DbtAdapter {
       manifestNote: loaded.manifestNote,
       secrets: this.secrets(),
     });
+  }
+
+  async compareRuns(baselineDir: string, nodeId?: string, signal?: AbortSignal) {
+    const baseline = DbtAdapter.fromEnv(this.env, baselineDir);
+    if (await directoryRealPath(this.artifactsDir) === await directoryRealPath(baseline.artifactsDir)) {
+      throw new Error("Baseline and current artifacts must be different directories.");
+    }
+    const before = await baseline.load(signal, false);
+    const after = await this.load(signal, false);
+    const result = compareDbtSnapshots(before, after, nodeId);
+    const redact = (value: unknown): unknown => {
+      if (typeof value === "string") return failureExcerpt(value, undefined, this.secrets()).excerpt;
+      if (Array.isArray(value)) return value.map(redact);
+      const record = asRecord(value);
+      return record ? Object.fromEntries(Object.entries(record).map(([key, item]) => [key, redact(item)])) : value;
+    };
+    return redact(result);
   }
 
   async inspect(action: DbtInspectAction, id?: string, signal?: AbortSignal): Promise<unknown> {

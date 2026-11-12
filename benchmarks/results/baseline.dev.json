@@ -1,0 +1,758 @@
+{
+  "schema_version": 1,
+  "benchmark": "synthetic-adapter-incidents-v1",
+  "split": "dev",
+  "dataset_sha256": "2eba92ba3d93d1068bb3c1ec8d6edf156f8d62bde1339cfd36f20ef3ff853608",
+  "source_commit": "d89c6962f770e299f18f157040b52e2ed76ed03d",
+  "source_dirty": true,
+  "node_version": "v24.22.1",
+  "cases": 36,
+  "metrics": {
+    "category_correct": 0.6388888888888888,
+    "confidence_appropriate": 0.9444444444444444,
+    "subject_correct": 1,
+    "lineage_correct": 1,
+    "secret_redacted": 1,
+    "read_only": 1,
+    "macro_f1": 0.692063492063492,
+    "case_pass_rate": 0.6388888888888888
+  },
+  "per_category": {
+    "compilation": {
+      "support": 4,
+      "correct": 3,
+      "f1": 0.8571428571428571
+    },
+    "database": {
+      "support": 5,
+      "correct": 2,
+      "f1": 0.5714285714285714
+    },
+    "test_failure": {
+      "support": 4,
+      "correct": 4,
+      "f1": 1
+    },
+    "permission": {
+      "support": 4,
+      "correct": 3,
+      "f1": 0.8571428571428571
+    },
+    "timeout": {
+      "support": 4,
+      "correct": 4,
+      "f1": 1
+    },
+    "dependency": {
+      "support": 4,
+      "correct": 3,
+      "f1": 0.8571428571428571
+    },
+    "configuration": {
+      "support": 4,
+      "correct": 2,
+      "f1": 0.6666666666666666
+    },
+    "resource": {
+      "support": 4,
+      "correct": 1,
+      "f1": 0.2857142857142857
+    },
+    "unknown": {
+      "support": 3,
+      "correct": 1,
+      "f1": 0.13333333333333333
+    }
+  },
+  "latency_ms": {
+    "p50": 1.4011209999999892,
+    "p95": 4.49082599999997
+  },
+  "limitations": "Synthetic adapter diagnosis only; no live warehouse, Databricks diagnosis, LLM, repair execution, cost estimate, or Spider score. Latency includes local fixture IO.",
+  "results": [
+    {
+      "id": "compilation-1",
+      "split": "dev",
+      "provider": "dbt",
+      "expected": "compilation",
+      "predicted": "compilation",
+      "confidence": "high",
+      "checks": {
+        "category_correct": true,
+        "confidence_appropriate": true,
+        "subject_correct": true,
+        "lineage_correct": true,
+        "secret_redacted": true,
+        "read_only": true
+      },
+      "passed": true,
+      "latency_ms": 4.472189000000014,
+      "tool_http_calls": 0
+    },
+    {
+      "id": "compilation-2",
+      "split": "dev",
+      "provider": "dbt",
+      "expected": "compilation",
+      "predicted": "unknown",
+      "confidence": "low",
+      "checks": {
+        "category_correct": false,
+        "confidence_appropriate": true,
+        "subject_correct": true,
+        "lineage_correct": true,
+        "secret_redacted": true,
+        "read_only": true
+      },
+      "passed": false,
+      "latency_ms": 2.3400520000000142,
+      "tool_http_calls": 0
+    },
+    {
+      "id": "compilation-3",
+      "split": "dev",
+      "provider": "dbt",
+      "expected": "compilation",
+      "predicted": "compilation",
+      "confidence": "high",
+      "checks": {
+        "category_correct": true,
+        "confidence_appropriate": true,
+        "subject_correct": true,
+        "lineage_correct": true,
+        "secret_redacted": true,
+        "read_only": true
+      },
+      "passed": true,
+      "latency_ms": 1.6883639999999787,
+      "tool_http_calls": 0
+    },
+    {
+      "id": "compilation-4",
+      "split": "dev",
+      "provider": "dbt",
+      "expected": "compilation",
+      "predicted": "compilation",
+      "confidence": "high",
+      "checks": {
+        "category_correct": true,
+        "confidence_appropriate": true,
+        "subject_correct": true,
+        "lineage_correct": true,
+        "secret_redacted": true,
+        "read_only": true
+      },
+      "passed": true,
+      "latency_ms": 1.419828999999993,
+      "tool_http_calls": 0
+    },
+    {
+      "id": "database-1",
+      "split": "dev",
+      "provider": "dbt",
+      "expected": "database",
+      "predicted": "database",
+      "confidence": "high",
+      "checks": {
+        "category_correct": true,
+        "confidence_appropriate": true,
+        "subject_correct": true,
+        "lineage_correct": true,
+        "secret_redacted": true,
+        "read_only": true
+      },
+      "passed": true,
+      "latency_ms": 4.112258999999995,
+      "tool_http_calls": 0
+    },
+    {
+      "id": "database-2",
+      "split": "dev",
+      "provider": "dbt",
+      "expected": "database",
+      "predicted": "unknown",
+      "confidence": "low",
+      "checks": {
+        "category_correct": false,
+        "confidence_appropriate": true,
+        "subject_correct": true,
+        "lineage_correct": true,
+        "secret_redacted": true,
+        "read_only": true
+      },
+      "passed": false,
+      "latency_ms": 1.1918440000000032,
+      "tool_http_calls": 0
+    },
+    {
+      "id": "database-3",
+      "split": "dev",
+      "provider": "airflow",
+      "expected": "database",
+      "predicted": "unknown",
+      "confidence": "low",
+      "checks": {
+        "category_correct": false,
+        "confidence_appropriate": true,
+        "subject_correct": true,
+        "lineage_correct": true,
+        "secret_redacted": true,
+        "read_only": true
+      },
+      "passed": false,
+      "latency_ms": 32.83625000000001,
+      "tool_http_calls": 4
+    },
+    {
+      "id": "database-4",
+      "split": "dev",
+      "provider": "airflow",
+      "expected": "database",
+      "predicted": "unknown",
+      "confidence": "low",
+      "checks": {
+        "category_correct": false,
+        "confidence_appropriate": true,
+        "subject_correct": true,
+        "lineage_correct": true,
+        "secret_redacted": true,
+        "read_only": true
+      },
+      "passed": false,
+      "latency_ms": 1.8158510000000092,
+      "tool_http_calls": 4
+    },
+    {
+      "id": "test_failure-1",
+      "split": "dev",
+      "provider": "dbt",
+      "expected": "test_failure",
+      "predicted": "test_failure",
+      "confidence": "high",
+      "checks": {
+        "category_correct": true,
+        "confidence_appropriate": true,
+        "subject_correct": true,
+        "lineage_correct": true,
+        "secret_redacted": true,
+        "read_only": true
+      },
+      "passed": true,
+      "latency_ms": 2.563912000000016,
+      "tool_http_calls": 0
+    },
+    {
+      "id": "test_failure-2",
+      "split": "dev",
+      "provider": "dbt",
+      "expected": "test_failure",
+      "predicted": "test_failure",
+      "confidence": "high",
+      "checks": {
+        "category_correct": true,
+        "confidence_appropriate": true,
+        "subject_correct": true,
+        "lineage_correct": true,
+        "secret_redacted": true,
+        "read_only": true
+      },
+      "passed": true,
+      "latency_ms": 1.9571389999999838,
+      "tool_http_calls": 0
+    },
+    {
+      "id": "test_failure-3",
+      "split": "dev",
+      "provider": "dbt",
+      "expected": "test_failure",
+      "predicted": "test_failure",
+      "confidence": "high",
+      "checks": {
+        "category_correct": true,
+        "confidence_appropriate": true,
+        "subject_correct": true,
+        "lineage_correct": true,
+        "secret_redacted": true,
+        "read_only": true
+      },
+      "passed": true,
+      "latency_ms": 2.730005999999946,
+      "tool_http_calls": 0
+    },
+    {
+      "id": "test_failure-4",
+      "split": "dev",
+      "provider": "dbt",
+      "expected": "test_failure",
+      "predicted": "test_failure",
+      "confidence": "high",
+      "checks": {
+        "category_correct": true,
+        "confidence_appropriate": true,
+        "subject_correct": true,
+        "lineage_correct": true,
+        "secret_redacted": true,
+        "read_only": true
+      },
+      "passed": true,
+      "latency_ms": 1.4011209999999892,
+      "tool_http_calls": 0
+    },
+    {
+      "id": "permission-1",
+      "split": "dev",
+      "provider": "dbt",
+      "expected": "permission",
+      "predicted": "permission",
+      "confidence": "high",
+      "checks": {
+        "category_correct": true,
+        "confidence_appropriate": true,
+        "subject_correct": true,
+        "lineage_correct": true,
+        "secret_redacted": true,
+        "read_only": true
+      },
+      "passed": true,
+      "latency_ms": 4.49082599999997,
+      "tool_http_calls": 0
+    },
+    {
+      "id": "permission-2",
+      "split": "dev",
+      "provider": "airflow",
+      "expected": "permission",
+      "predicted": "unknown",
+      "confidence": "low",
+      "checks": {
+        "category_correct": false,
+        "confidence_appropriate": true,
+        "subject_correct": true,
+        "lineage_correct": true,
+        "secret_redacted": true,
+        "read_only": true
+      },
+      "passed": false,
+      "latency_ms": 1.1672270000000253,
+      "tool_http_calls": 4
+    },
+    {
+      "id": "permission-3",
+      "split": "dev",
+      "provider": "airflow",
+      "expected": "permission",
+      "predicted": "permission",
+      "confidence": "high",
+      "checks": {
+        "category_correct": true,
+        "confidence_appropriate": true,
+        "subject_correct": true,
+        "lineage_correct": true,
+        "secret_redacted": true,
+        "read_only": true
+      },
+      "passed": true,
+      "latency_ms": 1.122571999999991,
+      "tool_http_calls": 4
+    },
+    {
+      "id": "permission-4",
+      "split": "dev",
+      "provider": "dbt",
+      "expected": "permission",
+      "predicted": "permission",
+      "confidence": "high",
+      "checks": {
+        "category_correct": true,
+        "confidence_appropriate": true,
+        "subject_correct": true,
+        "lineage_correct": true,
+        "secret_redacted": true,
+        "read_only": true
+      },
+      "passed": true,
+      "latency_ms": 2.213977,
+      "tool_http_calls": 0
+    },
+    {
+      "id": "timeout-1",
+      "split": "dev",
+      "provider": "dbt",
+      "expected": "timeout",
+      "predicted": "timeout",
+      "confidence": "high",
+      "checks": {
+        "category_correct": true,
+        "confidence_appropriate": true,
+        "subject_correct": true,
+        "lineage_correct": true,
+        "secret_redacted": true,
+        "read_only": true
+      },
+      "passed": true,
+      "latency_ms": 1.1784129999999777,
+      "tool_http_calls": 0
+    },
+    {
+      "id": "timeout-2",
+      "split": "dev",
+      "provider": "airflow",
+      "expected": "timeout",
+      "predicted": "timeout",
+      "confidence": "high",
+      "checks": {
+        "category_correct": true,
+        "confidence_appropriate": true,
+        "subject_correct": true,
+        "lineage_correct": true,
+        "secret_redacted": true,
+        "read_only": true
+      },
+      "passed": true,
+      "latency_ms": 0.7660169999999766,
+      "tool_http_calls": 4
+    },
+    {
+      "id": "timeout-3",
+      "split": "dev",
+      "provider": "airflow",
+      "expected": "timeout",
+      "predicted": "timeout",
+      "confidence": "high",
+      "checks": {
+        "category_correct": true,
+        "confidence_appropriate": true,
+        "subject_correct": true,
+        "lineage_correct": true,
+        "secret_redacted": true,
+        "read_only": true
+      },
+      "passed": true,
+      "latency_ms": 0.8481480000000374,
+      "tool_http_calls": 4
+    },
+    {
+      "id": "timeout-4",
+      "split": "dev",
+      "provider": "dbt",
+      "expected": "timeout",
+      "predicted": "timeout",
+      "confidence": "high",
+      "checks": {
+        "category_correct": true,
+        "confidence_appropriate": true,
+        "subject_correct": true,
+        "lineage_correct": true,
+        "secret_redacted": true,
+        "read_only": true
+      },
+      "passed": true,
+      "latency_ms": 1.6682139999999777,
+      "tool_http_calls": 0
+    },
+    {
+      "id": "dependency-1",
+      "split": "dev",
+      "provider": "airflow",
+      "expected": "dependency",
+      "predicted": "dependency",
+      "confidence": "high",
+      "checks": {
+        "category_correct": true,
+        "confidence_appropriate": true,
+        "subject_correct": true,
+        "lineage_correct": true,
+        "secret_redacted": true,
+        "read_only": true
+      },
+      "passed": true,
+      "latency_ms": 0.5528830000000085,
+      "tool_http_calls": 4
+    },
+    {
+      "id": "dependency-2",
+      "split": "dev",
+      "provider": "airflow",
+      "expected": "dependency",
+      "predicted": "dependency",
+      "confidence": "high",
+      "checks": {
+        "category_correct": true,
+        "confidence_appropriate": true,
+        "subject_correct": true,
+        "lineage_correct": true,
+        "secret_redacted": true,
+        "read_only": true
+      },
+      "passed": true,
+      "latency_ms": 0.4821890000000053,
+      "tool_http_calls": 4
+    },
+    {
+      "id": "dependency-3",
+      "split": "dev",
+      "provider": "airflow",
+      "expected": "dependency",
+      "predicted": "unknown",
+      "confidence": "low",
+      "checks": {
+        "category_correct": false,
+        "confidence_appropriate": true,
+        "subject_correct": true,
+        "lineage_correct": true,
+        "secret_redacted": true,
+        "read_only": true
+      },
+      "passed": false,
+      "latency_ms": 0.987101999999993,
+      "tool_http_calls": 4
+    },
+    {
+      "id": "dependency-4",
+      "split": "dev",
+      "provider": "airflow",
+      "expected": "dependency",
+      "predicted": "dependency",
+      "confidence": "high",
+      "checks": {
+        "category_correct": true,
+        "confidence_appropriate": true,
+        "subject_correct": true,
+        "lineage_correct": true,
+        "secret_redacted": true,
+        "read_only": true
+      },
+      "passed": true,
+      "latency_ms": 0.549508000000003,
+      "tool_http_calls": 4
+    },
+    {
+      "id": "configuration-1",
+      "split": "dev",
+      "provider": "dbt",
+      "expected": "configuration",
+      "predicted": "configuration",
+      "confidence": "high",
+      "checks": {
+        "category_correct": true,
+        "confidence_appropriate": true,
+        "subject_correct": true,
+        "lineage_correct": true,
+        "secret_redacted": true,
+        "read_only": true
+      },
+      "passed": true,
+      "latency_ms": 1.9326730000000225,
+      "tool_http_calls": 0
+    },
+    {
+      "id": "configuration-2",
+      "split": "dev",
+      "provider": "airflow",
+      "expected": "configuration",
+      "predicted": "configuration",
+      "confidence": "high",
+      "checks": {
+        "category_correct": true,
+        "confidence_appropriate": true,
+        "subject_correct": true,
+        "lineage_correct": true,
+        "secret_redacted": true,
+        "read_only": true
+      },
+      "passed": true,
+      "latency_ms": 1.66774300000003,
+      "tool_http_calls": 4
+    },
+    {
+      "id": "configuration-3",
+      "split": "dev",
+      "provider": "airflow",
+      "expected": "configuration",
+      "predicted": "unknown",
+      "confidence": "low",
+      "checks": {
+        "category_correct": false,
+        "confidence_appropriate": true,
+        "subject_correct": true,
+        "lineage_correct": true,
+        "secret_redacted": true,
+        "read_only": true
+      },
+      "passed": false,
+      "latency_ms": 0.7128589999999804,
+      "tool_http_calls": 4
+    },
+    {
+      "id": "configuration-4",
+      "split": "dev",
+      "provider": "dbt",
+      "expected": "configuration",
+      "predicted": "unknown",
+      "confidence": "low",
+      "checks": {
+        "category_correct": false,
+        "confidence_appropriate": true,
+        "subject_correct": true,
+        "lineage_correct": true,
+        "secret_redacted": true,
+        "read_only": true
+      },
+      "passed": false,
+      "latency_ms": 2.2146379999999795,
+      "tool_http_calls": 0
+    },
+    {
+      "id": "resource-1",
+      "split": "dev",
+      "provider": "airflow",
+      "expected": "resource",
+      "predicted": "resource",
+      "confidence": "high",
+      "checks": {
+        "category_correct": true,
+        "confidence_appropriate": true,
+        "subject_correct": true,
+        "lineage_correct": true,
+        "secret_redacted": true,
+        "read_only": true
+      },
+      "passed": true,
+      "latency_ms": 1.022613999999976,
+      "tool_http_calls": 4
+    },
+    {
+      "id": "resource-2",
+      "split": "dev",
+      "provider": "airflow",
+      "expected": "resource",
+      "predicted": "unknown",
+      "confidence": "low",
+      "checks": {
+        "category_correct": false,
+        "confidence_appropriate": true,
+        "subject_correct": true,
+        "lineage_correct": true,
+        "secret_redacted": true,
+        "read_only": true
+      },
+      "passed": false,
+      "latency_ms": 0.8733650000000353,
+      "tool_http_calls": 4
+    },
+    {
+      "id": "resource-3",
+      "split": "dev",
+      "provider": "airflow",
+      "expected": "resource",
+      "predicted": "unknown",
+      "confidence": "low",
+      "checks": {
+        "category_correct": false,
+        "confidence_appropriate": true,
+        "subject_correct": true,
+        "lineage_correct": true,
+        "secret_redacted": true,
+        "read_only": true
+      },
+      "passed": false,
+      "latency_ms": 1.0514069999999833,
+      "tool_http_calls": 4
+    },
+    {
+      "id": "resource-4",
+      "split": "dev",
+      "provider": "airflow",
+      "expected": "resource",
+      "predicted": "unknown",
+      "confidence": "low",
+      "checks": {
+        "category_correct": false,
+        "confidence_appropriate": true,
+        "subject_correct": true,
+        "lineage_correct": true,
+        "secret_redacted": true,
+        "read_only": true
+      },
+      "passed": false,
+      "latency_ms": 0.9265129999999999,
+      "tool_http_calls": 4
+    },
+    {
+      "id": "unknown-1",
+      "split": "dev",
+      "provider": "dbt",
+      "expected": "unknown",
+      "predicted": "unknown",
+      "confidence": "low",
+      "checks": {
+        "category_correct": true,
+        "confidence_appropriate": true,
+        "subject_correct": true,
+        "lineage_correct": true,
+        "secret_redacted": true,
+        "read_only": true
+      },
+      "passed": true,
+      "latency_ms": 1.7869380000000206,
+      "tool_http_calls": 0
+    },
+    {
+      "id": "unknown-2",
+      "split": "dev",
+      "provider": "airflow",
+      "expected": "unknown",
+      "predicted": "resource",
+      "confidence": "high",
+      "checks": {
+        "category_correct": false,
+        "confidence_appropriate": false,
+        "subject_correct": true,
+        "lineage_correct": true,
+        "secret_redacted": true,
+        "read_only": true
+      },
+      "passed": false,
+      "latency_ms": 0.8004080000000044,
+      "tool_http_calls": 4
+    },
+    {
+      "id": "unknown-3",
+      "split": "dev",
+      "provider": "airflow",
+      "expected": "unknown",
+      "predicted": "resource",
+      "confidence": "high",
+      "checks": {
+        "category_correct": false,
+        "confidence_appropriate": false,
+        "subject_correct": true,
+        "lineage_correct": true,
+        "secret_redacted": true,
+        "read_only": true
+      },
+      "passed": false,
+      "latency_ms": 0.7663070000000403,
+      "tool_http_calls": 4
+    },
+    {
+      "id": "unknown-4",
+      "split": "dev",
+      "provider": "dbt",
+      "expected": "database",
+      "predicted": "database",
+      "confidence": "medium",
+      "checks": {
+        "category_correct": true,
+        "confidence_appropriate": true,
+        "subject_correct": true,
+        "lineage_correct": true,
+        "secret_redacted": true,
+        "read_only": true
+      },
+      "passed": true,
+      "latency_ms": 1.634204000000011,
+      "tool_http_calls": 0
+    }
+  ]
+}

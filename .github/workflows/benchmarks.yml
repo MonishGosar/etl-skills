@@ -1,0 +1,40 @@
+name: Incident benchmarks
+on: [push, pull_request, workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  offline:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run verify
+      - run: npm run benchmark -- --split dev --baseline benchmarks/results/improved.dev.json --output benchmark-output/dev.json --gate
+      - run: npm run benchmark -- --split holdout --baseline benchmarks/results/improved.holdout.json --output benchmark-output/holdout.json --gate
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: incident-scores
+          path: benchmark-output/
+  reconciliation-demo:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: '3.12'
+      - run: npm ci && npm run build
+      - run: uv run --no-project --with dbt-duckdb==1.11.1 --with dbt-core==1.12.6 --with duckdb==2.0.0 python examples/transaction-reconciliation/run_demo.py --output benchmark-output/reconciliation.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: reconciliation-demo
+          path: benchmark-output/

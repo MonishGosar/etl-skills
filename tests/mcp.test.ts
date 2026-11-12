@@ -70,7 +70,7 @@ test("stdio MCP server exposes only the portable read tools", async () => {
     const listed = await mcp.request(2, "tools/list", {});
     assert.deepEqual(
       listed.result.tools.map((tool: { name: string }) => tool.name),
-      ["etl_capabilities", "etl_inspect", "etl_uc_context", "etl_query_status", "etl_diagnose"],
+      ["etl_capabilities", "etl_inspect", "etl_uc_context", "etl_query_status", "etl_compare_runs", "etl_diagnose"],
     );
     assert.ok(listed.result.tools.every((tool: { annotations?: { readOnlyHint?: boolean } }) => tool.annotations?.readOnlyHint));
 
@@ -82,7 +82,7 @@ test("stdio MCP server exposes only the portable read tools", async () => {
     assert.deepEqual(databricks.operations, ["inspect", "query_status", "uc_context"]);
     assert.equal(databricks.configured, false);
     assert.equal(databricks.auth, "unconfigured");
-    assert.deepEqual(providers.find((provider: { provider: string }) => provider.provider === "dbt").operations, ["inspect", "diagnose"]);
+    assert.deepEqual(providers.find((provider: { provider: string }) => provider.provider === "dbt").operations, ["inspect", "diagnose", "compare_runs"]);
     assert.deepEqual(providers.find((provider: { provider: string }) => provider.provider === "airflow").unavailableMutations, ["trigger", "clear", "retry", "pause", "backfill"]);
   } finally {
     mcp.child.kill();
@@ -109,6 +109,29 @@ test("capabilities treat OAuth machine-to-machine Databricks as configured witho
     assert.deepEqual(databricks.operations, ["inspect", "query_status", "uc_context"]);
   } finally {
     mcp.child.kill();
+  }
+});
+
+test("MCP compares coherent successful/current artifacts through the read-only tool", async () => {
+  const before = await mkdtemp(join(tmpdir(), "etl-mcp-before-"));
+  const after = await mkdtemp(join(tmpdir(), "etl-mcp-after-"));
+  const mcp = startMcp(["--read-only"], { DBT_LOG_PATH: "/not-a-valid-log" });
+  try {
+    for (const [directory, id, date, status] of [[before, "old", "2026-11-11", "success"], [after, "new", "2026-11-12", "error"]]) {
+      const metadata = { invocation_id: id, project_id: "p", generated_at: date };
+      await writeFile(join(directory, "run_results.json"), JSON.stringify({ metadata, results: [{ unique_id: "model.p.x", status, message: "Database Error" }] }));
+      await writeFile(join(directory, "manifest.json"), JSON.stringify({ metadata, nodes: { "model.p.x": { name: "x", raw_code: id, config: {}, columns: {} } } }));
+    }
+    await mcp.request(1, "initialize", { protocolVersion: "2025-11-25", capabilities: {}, clientInfo: { name: "test", version: "1" } });
+    mcp.send({ jsonrpc: "2.0", method: "notifications/initialized" });
+    const result = await mcp.request(2, "tools/call", { name: "etl_compare_runs", arguments: { artifacts_dir: after, baseline_artifacts_dir: before } });
+    assert.equal(result.result.isError, undefined);
+    assert.equal(result.result.structuredContent.data.focusNode, "model.p.x");
+    assert.deepEqual(result.result.structuredContent.data.changes[0].kinds, ["code"]);
+  } finally {
+    mcp.child.kill();
+    await rm(before, {recursive: true, force: true});
+    await rm(after, {recursive: true, force: true});
   }
 });
 

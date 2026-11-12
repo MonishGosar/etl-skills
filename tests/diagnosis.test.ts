@@ -32,3 +32,13 @@ test("scrubber removes credential-shaped text and leaves the error", () => {
   assert.doesNotMatch(scrubbed, /eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9/);
   assert.match(scrubbed, /\[REDACTED]/);
 });
+
+test("termination signals require resource evidence before assigning a cause", () => {
+  for (const message of ["Worker received SIGTERM during rollout", "SIGKILL: reason unavailable"]) {
+    assert.deepEqual(
+      { category: classifyFailure({message}).category, confidence: classifyFailure({message}).confidence },
+      { category: "unknown", confidence: "low" },
+    );
+  }
+  assert.equal(classifyFailure({message: "SIGKILL after container exceeded its memory limit"}).category, "resource");
+});
