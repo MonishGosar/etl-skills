@@ -193,3 +193,6 @@ npm.cmd run verify
 The verification command builds both bundled executables, type-checks source, runs mocked HTTP and MCP protocol tests, and inspects the npm tarball. Tests do not require Databricks credentials.
 
 See [RELEASE_PLAN.md](RELEASE_PLAN.md) for remaining live compatibility checks and release gates. Provider expansion is tracked separately in [FUTURE_WORK.md](FUTURE_WORK.md). User-visible changes are recorded in [CHANGELOG.md](CHANGELOG.md).
+
+Repeatable incident scoring, baseline/improved results, and CI regression gates
+are documented in [benchmarks/README.md](benchmarks/README.md).

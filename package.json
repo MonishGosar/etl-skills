@@ -58,7 +58,9 @@
     "build": "node scripts/build.mjs",
     "prepack": "npm run build",
     "typecheck": "tsc --noEmit",
+    "typecheck:benchmarks": "tsc --noEmit -p tsconfig.benchmarks.json",
     "test": "npm run build && tsx --test tests/*.test.ts",
+    "benchmark": "tsx benchmarks/run.ts",
     "verify:packed": "node scripts/verify-packed-install.mjs",
     "verify": "npm run typecheck && npm test && npm run verify:packed"
   },
