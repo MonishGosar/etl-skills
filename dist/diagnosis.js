@@ -27,14 +27,14 @@ export function classifyFailure(input) {
             confidence: "medium",
         };
     }
-    if (/(?:^|\n)\s*compilation error\b|parsing error|unknown macro|\bis undefined\b|syntax error in model/.test(text)) {
+    if (/(?:^|\n)\s*compilation error\b|parsing error|unknown macro|\bis undefined\b|syntax error in model|templatesyntaxerror/.test(text)) {
         return {
             category: "compilation",
             summary: "The project failed to compile before the warehouse finished the statement.",
             confidence: "high",
         };
     }
-    if (/permission denied|access denied|not authorized|insufficient privileges|authorization failed/.test(text)) {
+    if (/permission denied|access denied|not authorized|insufficient privileges|insufficient[_ ]permissions|authorization failed|sqlstate\s*[:=]?\s*42501/.test(text)) {
         return {
             category: "permission",
             summary: "The run identity is missing a grant or role required by this step.",
@@ -44,14 +44,16 @@ export function classifyFailure(input) {
     if (/timeout|timed out|statement timeout|deadline exceeded/.test(text)) {
         return { category: "timeout", summary: "The step exceeded its time limit.", confidence: "high" };
     }
-    if (/out of memory|oomkilled|disk full|no space left|sigkill|sigterm|zombie task/.test(text)) {
+    // A termination signal alone does not establish resource exhaustion: rollouts,
+    // operator cancellation, and scheduler actions can also kill a healthy worker.
+    if (/out of memory|outofmemoryerror|\bmemoryerror\b|oomkilled|disk[_ ]full|no space left|exceeded (?:its )?memory limit/.test(text)) {
         return {
             category: "resource",
-            summary: "The worker ran out of memory, disk, or was killed before the step finished.",
+            summary: "The error reports exhausted memory or disk capacity.",
             confidence: "high",
         };
     }
-    if (/could not connect|connection refused|name or service not known|could not resolve|profiles\.yml|dbt profile|invalid profile|target named|authentication failed|login failed|modulenotfounderror|no module named|airflow connection/.test(text)) {
+    if (/could not connect|connection refused|name or service not known|could not resolve|profiles\.yml|dbt profile|invalid profile|could not find profile|target named|authentication failed|login failed|modulenotfounderror|no module named|airflow connection|conn_id .+ (?:isn't|is not) defined/.test(text)) {
         return {
             category: "configuration",
             summary: "A connection, profile, target, or import required by this step is missing or unreachable.",
@@ -65,14 +67,14 @@ export function classifyFailure(input) {
             confidence: "high",
         };
     }
-    if (status === "upstream_failed" || status === "skipped" || /upstream failure|skipped because of upstream/.test(text)) {
+    if (status === "upstream_failed" || status === "skipped" || /upstream_failed|upstream(?: task)?(?: [\w.-]+)? fail(?:ed|ure)|skipped because of upstream/.test(text)) {
         return {
             category: "dependency",
             summary: "This step did not run because an upstream step failed.",
             confidence: "high",
         };
     }
-    if (/database error|sql compilation error|relation .+ does not exist|object .+ does not exist|programmingerror|operationalerror/.test(text)) {
+    if (/database error|sql compilation error|relation .+ does not exist|object .+ does not exist|programmingerror|operationalerror|undefinedcolumn|undefinedtable|unresolved_column|table_or_view_not_found|datatype_mismatch|sqlstate\s*[:=]?\s*42\w{3}/.test(text)) {
         return { category: "database", summary: "The warehouse rejected the statement.", confidence: "high" };
     }
     if (!input.message.trim()) {

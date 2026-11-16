@@ -1,0 +1,4 @@
+transaction_id,amount_cents
+tx-001,1250
+tx-002,-250
+tx-003,2000

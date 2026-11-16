@@ -22,7 +22,7 @@ export function readOnlyCapabilities(env: NodeJS.ProcessEnv = process.env) {
       {
         provider: "dbt" as const,
         configured: dbtConfigured(env),
-        operations: ["inspect", "diagnose"],
+        operations: ["inspect", "diagnose", "compare_runs"],
         unavailableMutations: ["run", "build", "test", "retry"],
       },
       {

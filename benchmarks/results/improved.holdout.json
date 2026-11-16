@@ -1,0 +1,416 @@
+{
+  "schema_version": 1,
+  "benchmark": "synthetic-adapter-incidents-v1",
+  "split": "holdout",
+  "dataset_sha256": "2eba92ba3d93d1068bb3c1ec8d6edf156f8d62bde1339cfd36f20ef3ff853608",
+  "source_commit": "d89c6962f770e299f18f157040b52e2ed76ed03d",
+  "source_dirty": true,
+  "node_version": "v24.22.1",
+  "cases": 18,
+  "metrics": {
+    "category_correct": 1,
+    "confidence_appropriate": 1,
+    "subject_correct": 1,
+    "lineage_correct": 1,
+    "secret_redacted": 1,
+    "read_only": 1,
+    "macro_f1": 1,
+    "case_pass_rate": 1
+  },
+  "per_category": {
+    "compilation": {
+      "support": 2,
+      "correct": 2,
+      "f1": 1
+    },
+    "database": {
+      "support": 2,
+      "correct": 2,
+      "f1": 1
+    },
+    "test_failure": {
+      "support": 2,
+      "correct": 2,
+      "f1": 1
+    },
+    "permission": {
+      "support": 2,
+      "correct": 2,
+      "f1": 1
+    },
+    "timeout": {
+      "support": 2,
+      "correct": 2,
+      "f1": 1
+    },
+    "dependency": {
+      "support": 2,
+      "correct": 2,
+      "f1": 1
+    },
+    "configuration": {
+      "support": 2,
+      "correct": 2,
+      "f1": 1
+    },
+    "resource": {
+      "support": 2,
+      "correct": 2,
+      "f1": 1
+    },
+    "unknown": {
+      "support": 2,
+      "correct": 2,
+      "f1": 1
+    }
+  },
+  "latency_ms": {
+    "p50": 1.1769689999999855,
+    "p95": 22.170863999999995
+  },
+  "limitations": "Synthetic adapter diagnosis only; no live warehouse, Databricks diagnosis, LLM, repair execution, cost estimate, or Spider score. Latency includes local fixture IO.",
+  "results": [
+    {
+      "id": "compilation-5",
+      "split": "holdout",
+      "provider": "dbt",
+      "expected": "compilation",
+      "predicted": "compilation",
+      "confidence": "high",
+      "checks": {
+        "category_correct": true,
+        "confidence_appropriate": true,
+        "subject_correct": true,
+        "lineage_correct": true,
+        "secret_redacted": true,
+        "read_only": true
+      },
+      "passed": true,
+      "latency_ms": 4.52826300000001,
+      "tool_http_calls": 0
+    },
+    {
+      "id": "compilation-6",
+      "split": "holdout",
+      "provider": "dbt",
+      "expected": "compilation",
+      "predicted": "compilation",
+      "confidence": "high",
+      "checks": {
+        "category_correct": true,
+        "confidence_appropriate": true,
+        "subject_correct": true,
+        "lineage_correct": true,
+        "secret_redacted": true,
+        "read_only": true
+      },
+      "passed": true,
+      "latency_ms": 1.7978319999999997,
+      "tool_http_calls": 0
+    },
+    {
+      "id": "database-5",
+      "split": "holdout",
+      "provider": "dbt",
+      "expected": "database",
+      "predicted": "database",
+      "confidence": "high",
+      "checks": {
+        "category_correct": true,
+        "confidence_appropriate": true,
+        "subject_correct": true,
+        "lineage_correct": true,
+        "secret_redacted": true,
+        "read_only": true
+      },
+      "passed": true,
+      "latency_ms": 2.8741629999999816,
+      "tool_http_calls": 0
+    },
+    {
+      "id": "database-6",
+      "split": "holdout",
+      "provider": "airflow",
+      "expected": "database",
+      "predicted": "database",
+      "confidence": "high",
+      "checks": {
+        "category_correct": true,
+        "confidence_appropriate": true,
+        "subject_correct": true,
+        "lineage_correct": true,
+        "secret_redacted": true,
+        "read_only": true
+      },
+      "passed": true,
+      "latency_ms": 22.170863999999995,
+      "tool_http_calls": 4
+    },
+    {
+      "id": "test_failure-5",
+      "split": "holdout",
+      "provider": "dbt",
+      "expected": "test_failure",
+      "predicted": "test_failure",
+      "confidence": "high",
+      "checks": {
+        "category_correct": true,
+        "confidence_appropriate": true,
+        "subject_correct": true,
+        "lineage_correct": true,
+        "secret_redacted": true,
+        "read_only": true
+      },
+      "passed": true,
+      "latency_ms": 1.7432009999999991,
+      "tool_http_calls": 0
+    },
+    {
+      "id": "test_failure-6",
+      "split": "holdout",
+      "provider": "dbt",
+      "expected": "test_failure",
+      "predicted": "test_failure",
+      "confidence": "high",
+      "checks": {
+        "category_correct": true,
+        "confidence_appropriate": true,
+        "subject_correct": true,
+        "lineage_correct": true,
+        "secret_redacted": true,
+        "read_only": true
+      },
+      "passed": true,
+      "latency_ms": 1.5991289999999765,
+      "tool_http_calls": 0
+    },
+    {
+      "id": "permission-5",
+      "split": "holdout",
+      "provider": "dbt",
+      "expected": "permission",
+      "predicted": "permission",
+      "confidence": "high",
+      "checks": {
+        "category_correct": true,
+        "confidence_appropriate": true,
+        "subject_correct": true,
+        "lineage_correct": true,
+        "secret_redacted": true,
+        "read_only": true
+      },
+      "passed": true,
+      "latency_ms": 1.469409000000013,
+      "tool_http_calls": 0
+    },
+    {
+      "id": "permission-6",
+      "split": "holdout",
+      "provider": "airflow",
+      "expected": "permission",
+      "predicted": "permission",
+      "confidence": "high",
+      "checks": {
+        "category_correct": true,
+        "confidence_appropriate": true,
+        "subject_correct": true,
+        "lineage_correct": true,
+        "secret_redacted": true,
+        "read_only": true
+      },
+      "passed": true,
+      "latency_ms": 1.1769689999999855,
+      "tool_http_calls": 4
+    },
+    {
+      "id": "timeout-5",
+      "split": "holdout",
+      "provider": "airflow",
+      "expected": "timeout",
+      "predicted": "timeout",
+      "confidence": "high",
+      "checks": {
+        "category_correct": true,
+        "confidence_appropriate": true,
+        "subject_correct": true,
+        "lineage_correct": true,
+        "secret_redacted": true,
+        "read_only": true
+      },
+      "passed": true,
+      "latency_ms": 0.9920779999999922,
+      "tool_http_calls": 4
+    },
+    {
+      "id": "timeout-6",
+      "split": "holdout",
+      "provider": "airflow",
+      "expected": "timeout",
+      "predicted": "timeout",
+      "confidence": "high",
+      "checks": {
+        "category_correct": true,
+        "confidence_appropriate": true,
+        "subject_correct": true,
+        "lineage_correct": true,
+        "secret_redacted": true,
+        "read_only": true
+      },
+      "passed": true,
+      "latency_ms": 0.6938590000000033,
+      "tool_http_calls": 4
+    },
+    {
+      "id": "dependency-5",
+      "split": "holdout",
+      "provider": "airflow",
+      "expected": "dependency",
+      "predicted": "dependency",
+      "confidence": "high",
+      "checks": {
+        "category_correct": true,
+        "confidence_appropriate": true,
+        "subject_correct": true,
+        "lineage_correct": true,
+        "secret_redacted": true,
+        "read_only": true
+      },
+      "passed": true,
+      "latency_ms": 0.5574290000000133,
+      "tool_http_calls": 4
+    },
+    {
+      "id": "dependency-6",
+      "split": "holdout",
+      "provider": "airflow",
+      "expected": "dependency",
+      "predicted": "dependency",
+      "confidence": "high",
+      "checks": {
+        "category_correct": true,
+        "confidence_appropriate": true,
+        "subject_correct": true,
+        "lineage_correct": true,
+        "secret_redacted": true,
+        "read_only": true
+      },
+      "passed": true,
+      "latency_ms": 0.5838180000000079,
+      "tool_http_calls": 4
+    },
+    {
+      "id": "configuration-5",
+      "split": "holdout",
+      "provider": "dbt",
+      "expected": "configuration",
+      "predicted": "configuration",
+      "confidence": "high",
+      "checks": {
+        "category_correct": true,
+        "confidence_appropriate": true,
+        "subject_correct": true,
+        "lineage_correct": true,
+        "secret_redacted": true,
+        "read_only": true
+      },
+      "passed": true,
+      "latency_ms": 1.3252980000000036,
+      "tool_http_calls": 0
+    },
+    {
+      "id": "configuration-6",
+      "split": "holdout",
+      "provider": "airflow",
+      "expected": "configuration",
+      "predicted": "configuration",
+      "confidence": "high",
+      "checks": {
+        "category_correct": true,
+        "confidence_appropriate": true,
+        "subject_correct": true,
+        "lineage_correct": true,
+        "secret_redacted": true,
+        "read_only": true
+      },
+      "passed": true,
+      "latency_ms": 0.6530400000000043,
+      "tool_http_calls": 4
+    },
+    {
+      "id": "resource-5",
+      "split": "holdout",
+      "provider": "airflow",
+      "expected": "resource",
+      "predicted": "resource",
+      "confidence": "high",
+      "checks": {
+        "category_correct": true,
+        "confidence_appropriate": true,
+        "subject_correct": true,
+        "lineage_correct": true,
+        "secret_redacted": true,
+        "read_only": true
+      },
+      "passed": true,
+      "latency_ms": 0.3779559999999833,
+      "tool_http_calls": 4
+    },
+    {
+      "id": "resource-6",
+      "split": "holdout",
+      "provider": "airflow",
+      "expected": "resource",
+      "predicted": "resource",
+      "confidence": "high",
+      "checks": {
+        "category_correct": true,
+        "confidence_appropriate": true,
+        "subject_correct": true,
+        "lineage_correct": true,
+        "secret_redacted": true,
+        "read_only": true
+      },
+      "passed": true,
+      "latency_ms": 0.6398000000000081,
+      "tool_http_calls": 4
+    },
+    {
+      "id": "unknown-5",
+      "split": "holdout",
+      "provider": "airflow",
+      "expected": "unknown",
+      "predicted": "unknown",
+      "confidence": "low",
+      "checks": {
+        "category_correct": true,
+        "confidence_appropriate": true,
+        "subject_correct": true,
+        "lineage_correct": true,
+        "secret_redacted": true,
+        "read_only": true
+      },
+      "passed": true,
+      "latency_ms": 0.47120200000000523,
+      "tool_http_calls": 4
+    },
+    {
+      "id": "unknown-6",
+      "split": "holdout",
+      "provider": "dbt",
+      "expected": "unknown",
+      "predicted": "unknown",
+      "confidence": "low",
+      "checks": {
+        "category_correct": true,
+        "confidence_appropriate": true,
+        "subject_correct": true,
+        "lineage_correct": true,
+        "secret_redacted": true,
+        "read_only": true
+      },
+      "passed": true,
+      "latency_ms": 1.3833119999999894,
+      "tool_http_calls": 0
+    }
+  ]
+}

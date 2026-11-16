@@ -1,0 +1,546 @@
+{
+  "version": 1,
+  "provenance": "Hand-authored synthetic regression scenarios. Frozen before first run; holdout is a wording check, not an independent external test.",
+  "cases": [
+    {
+      "id": "compilation-1",
+      "split": "dev",
+      "provider": "dbt",
+      "message": "Compilation Error in model orders\n'dbt_utils' is undefined",
+      "status": "error",
+      "resource_type": "model",
+      "expected_category": "compilation",
+      "max_confidence": "high"
+    },
+    {
+      "id": "compilation-2",
+      "split": "dev",
+      "provider": "dbt",
+      "message": "jinja2.exceptions.TemplateSyntaxError: unexpected 'endfor'",
+      "status": "error",
+      "resource_type": "model",
+      "expected_category": "compilation",
+      "max_confidence": "high"
+    },
+    {
+      "id": "compilation-3",
+      "split": "dev",
+      "provider": "dbt",
+      "message": "Parsing Error: invalid ref() invocation",
+      "status": "error",
+      "resource_type": "model",
+      "expected_category": "compilation",
+      "max_confidence": "high"
+    },
+    {
+      "id": "compilation-4",
+      "split": "dev",
+      "provider": "dbt",
+      "message": "Compilation Error: macro calculate_total is undefined",
+      "status": "error",
+      "resource_type": "model",
+      "expected_category": "compilation",
+      "max_confidence": "high"
+    },
+    {
+      "id": "compilation-5",
+      "split": "holdout",
+      "provider": "dbt",
+      "message": "jinja2.exceptions.UndefinedError: 'currency' is undefined",
+      "status": "error",
+      "resource_type": "model",
+      "expected_category": "compilation",
+      "max_confidence": "high"
+    },
+    {
+      "id": "compilation-6",
+      "split": "holdout",
+      "provider": "dbt",
+      "message": "TemplateSyntaxError: expected token ')', got 'end of statement block'",
+      "status": "error",
+      "resource_type": "model",
+      "expected_category": "compilation",
+      "max_confidence": "high"
+    },
+    {
+      "id": "database-1",
+      "split": "dev",
+      "provider": "dbt",
+      "message": "Database Error in model orders\nrelation raw.orders does not exist",
+      "status": "error",
+      "resource_type": "model",
+      "expected_category": "database",
+      "max_confidence": "high"
+    },
+    {
+      "id": "database-2",
+      "split": "dev",
+      "provider": "dbt",
+      "message": "[UNRESOLVED_COLUMN.WITH_SUGGESTION] customer_identifier cannot be resolved",
+      "status": "error",
+      "resource_type": "model",
+      "expected_category": "database",
+      "max_confidence": "high"
+    },
+    {
+      "id": "database-3",
+      "split": "dev",
+      "provider": "airflow",
+      "message": "psycopg2.errors.UndefinedColumn: column customer_total does not exist",
+      "status": "failed",
+      "resource_type": "task",
+      "expected_category": "database",
+      "max_confidence": "high"
+    },
+    {
+      "id": "database-4",
+      "split": "dev",
+      "provider": "airflow",
+      "message": "[TABLE_OR_VIEW_NOT_FOUND] raw.payments cannot be found",
+      "status": "failed",
+      "resource_type": "task",
+      "expected_category": "database",
+      "max_confidence": "high"
+    },
+    {
+      "id": "database-5",
+      "split": "holdout",
+      "provider": "dbt",
+      "message": "SQLSTATE 42703: column gross_amount does not exist",
+      "status": "error",
+      "resource_type": "model",
+      "expected_category": "database",
+      "max_confidence": "high"
+    },
+    {
+      "id": "database-6",
+      "split": "holdout",
+      "provider": "airflow",
+      "message": "[DATATYPE_MISMATCH] cannot resolve amount + currency",
+      "status": "failed",
+      "resource_type": "task",
+      "expected_category": "database",
+      "max_confidence": "high"
+    },
+    {
+      "id": "test_failure-1",
+      "split": "dev",
+      "provider": "dbt",
+      "message": "Got 4 results, configured to fail if != 0",
+      "status": "fail",
+      "resource_type": "test",
+      "expected_category": "test_failure",
+      "max_confidence": "high"
+    },
+    {
+      "id": "test_failure-2",
+      "split": "dev",
+      "provider": "dbt",
+      "message": "Failure in test unique_orders_id: Got 2 results",
+      "status": "fail",
+      "resource_type": "test",
+      "expected_category": "test_failure",
+      "max_confidence": "high"
+    },
+    {
+      "id": "test_failure-3",
+      "split": "dev",
+      "provider": "dbt",
+      "message": "not_null_orders_customer returned 15 violating rows",
+      "status": "fail",
+      "resource_type": "test",
+      "expected_category": "test_failure",
+      "max_confidence": "high"
+    },
+    {
+      "id": "test_failure-4",
+      "split": "dev",
+      "provider": "dbt",
+      "message": "relationships_orders_customer: validation failed",
+      "status": "fail",
+      "resource_type": "test",
+      "expected_category": "test_failure",
+      "max_confidence": "high"
+    },
+    {
+      "id": "test_failure-5",
+      "split": "holdout",
+      "provider": "dbt",
+      "message": "accepted_values_status returned invalid values",
+      "status": "fail",
+      "resource_type": "test",
+      "expected_category": "test_failure",
+      "max_confidence": "high"
+    },
+    {
+      "id": "test_failure-6",
+      "split": "holdout",
+      "provider": "dbt",
+      "message": "unique_payment_reference returned duplicates",
+      "status": "fail",
+      "resource_type": "test",
+      "expected_category": "test_failure",
+      "max_confidence": "high"
+    },
+    {
+      "id": "permission-1",
+      "split": "dev",
+      "provider": "dbt",
+      "message": "permission denied for schema analytics",
+      "status": "error",
+      "resource_type": "model",
+      "expected_category": "permission",
+      "max_confidence": "high"
+    },
+    {
+      "id": "permission-2",
+      "split": "dev",
+      "provider": "airflow",
+      "message": "[INSUFFICIENT_PERMISSIONS] principal lacks SELECT on raw.orders",
+      "status": "failed",
+      "resource_type": "task",
+      "expected_category": "permission",
+      "max_confidence": "high"
+    },
+    {
+      "id": "permission-3",
+      "split": "dev",
+      "provider": "airflow",
+      "message": "Access Denied: table finance.payments",
+      "status": "failed",
+      "resource_type": "task",
+      "expected_category": "permission",
+      "max_confidence": "high"
+    },
+    {
+      "id": "permission-4",
+      "split": "dev",
+      "provider": "dbt",
+      "message": "insufficient privileges to operate on table orders",
+      "status": "error",
+      "resource_type": "model",
+      "expected_category": "permission",
+      "max_confidence": "high"
+    },
+    {
+      "id": "permission-5",
+      "split": "holdout",
+      "provider": "dbt",
+      "message": "SQLSTATE 42501: permission denied for table ledger",
+      "status": "error",
+      "resource_type": "model",
+      "expected_category": "permission",
+      "max_confidence": "high"
+    },
+    {
+      "id": "permission-6",
+      "split": "holdout",
+      "provider": "airflow",
+      "message": "Authorization failed: missing required role",
+      "status": "failed",
+      "resource_type": "task",
+      "expected_category": "permission",
+      "max_confidence": "high"
+    },
+    {
+      "id": "timeout-1",
+      "split": "dev",
+      "provider": "dbt",
+      "message": "canceling statement due to statement timeout",
+      "status": "error",
+      "resource_type": "model",
+      "expected_category": "timeout",
+      "max_confidence": "high"
+    },
+    {
+      "id": "timeout-2",
+      "split": "dev",
+      "provider": "airflow",
+      "message": "AirflowTaskTimeout: task exceeded 600 seconds",
+      "status": "failed",
+      "resource_type": "task",
+      "expected_category": "timeout",
+      "max_confidence": "high"
+    },
+    {
+      "id": "timeout-3",
+      "split": "dev",
+      "provider": "airflow",
+      "message": "Deadline exceeded while waiting for warehouse",
+      "status": "failed",
+      "resource_type": "task",
+      "expected_category": "timeout",
+      "max_confidence": "high"
+    },
+    {
+      "id": "timeout-4",
+      "split": "dev",
+      "provider": "dbt",
+      "message": "Query timed out after 3600 seconds",
+      "status": "error",
+      "resource_type": "model",
+      "expected_category": "timeout",
+      "max_confidence": "high"
+    },
+    {
+      "id": "timeout-5",
+      "split": "holdout",
+      "provider": "airflow",
+      "message": "TimeoutError: sensor exceeded execution_timeout",
+      "status": "failed",
+      "resource_type": "task",
+      "expected_category": "timeout",
+      "max_confidence": "high"
+    },
+    {
+      "id": "timeout-6",
+      "split": "holdout",
+      "provider": "airflow",
+      "message": "Task timed out waiting for a response",
+      "status": "failed",
+      "resource_type": "task",
+      "expected_category": "timeout",
+      "max_confidence": "high"
+    },
+    {
+      "id": "dependency-1",
+      "split": "dev",
+      "provider": "airflow",
+      "message": "Skipped because of upstream failure",
+      "status": "upstream_failed",
+      "resource_type": "task",
+      "expected_category": "dependency",
+      "max_confidence": "high"
+    },
+    {
+      "id": "dependency-2",
+      "split": "dev",
+      "provider": "airflow",
+      "message": "Trigger rule all_success not satisfied: upstream task failed",
+      "status": "upstream_failed",
+      "resource_type": "task",
+      "expected_category": "dependency",
+      "max_confidence": "high"
+    },
+    {
+      "id": "dependency-3",
+      "split": "dev",
+      "provider": "airflow",
+      "message": "Dependency failure: upstream task extract_orders failed",
+      "status": "failed",
+      "resource_type": "task",
+      "expected_category": "dependency",
+      "max_confidence": "high"
+    },
+    {
+      "id": "dependency-4",
+      "split": "dev",
+      "provider": "airflow",
+      "message": "Blocked by upstream failure in source ingestion",
+      "status": "failed",
+      "resource_type": "task",
+      "expected_category": "dependency",
+      "max_confidence": "high"
+    },
+    {
+      "id": "dependency-5",
+      "split": "holdout",
+      "provider": "airflow",
+      "message": "Task did not run: upstream_failed",
+      "status": "upstream_failed",
+      "resource_type": "task",
+      "expected_category": "dependency",
+      "max_confidence": "high"
+    },
+    {
+      "id": "dependency-6",
+      "split": "holdout",
+      "provider": "airflow",
+      "message": "Cannot run because an upstream task failed",
+      "status": "failed",
+      "resource_type": "task",
+      "expected_category": "dependency",
+      "max_confidence": "high"
+    },
+    {
+      "id": "configuration-1",
+      "split": "dev",
+      "provider": "dbt",
+      "message": "could not connect to server: connection refused",
+      "status": "error",
+      "resource_type": "model",
+      "expected_category": "configuration",
+      "max_confidence": "high"
+    },
+    {
+      "id": "configuration-2",
+      "split": "dev",
+      "provider": "airflow",
+      "message": "ModuleNotFoundError: No module named 'warehouse_adapter'",
+      "status": "failed",
+      "resource_type": "task",
+      "expected_category": "configuration",
+      "max_confidence": "high"
+    },
+    {
+      "id": "configuration-3",
+      "split": "dev",
+      "provider": "airflow",
+      "message": "AirflowNotFoundException: The conn_id 'warehouse' isn't defined",
+      "status": "failed",
+      "resource_type": "task",
+      "expected_category": "configuration",
+      "max_confidence": "high"
+    },
+    {
+      "id": "configuration-4",
+      "split": "dev",
+      "provider": "dbt",
+      "message": "Runtime Error: Could not find profile named 'production'",
+      "status": "error",
+      "resource_type": "model",
+      "expected_category": "configuration",
+      "max_confidence": "high"
+    },
+    {
+      "id": "configuration-5",
+      "split": "holdout",
+      "provider": "dbt",
+      "message": "Invalid profile in profiles.yml",
+      "status": "error",
+      "resource_type": "model",
+      "expected_category": "configuration",
+      "max_confidence": "high"
+    },
+    {
+      "id": "configuration-6",
+      "split": "holdout",
+      "provider": "airflow",
+      "message": "No module named 'custom_operator'",
+      "status": "failed",
+      "resource_type": "task",
+      "expected_category": "configuration",
+      "max_confidence": "high"
+    },
+    {
+      "id": "resource-1",
+      "split": "dev",
+      "provider": "airflow",
+      "message": "Worker terminated: OOMKilled",
+      "status": "failed",
+      "resource_type": "task",
+      "expected_category": "resource",
+      "max_confidence": "high"
+    },
+    {
+      "id": "resource-2",
+      "split": "dev",
+      "provider": "airflow",
+      "message": "java.lang.OutOfMemoryError: Java heap space",
+      "status": "failed",
+      "resource_type": "task",
+      "expected_category": "resource",
+      "max_confidence": "high"
+    },
+    {
+      "id": "resource-3",
+      "split": "dev",
+      "provider": "airflow",
+      "message": "[DISK_FULL] failed to spill shuffle data",
+      "status": "failed",
+      "resource_type": "task",
+      "expected_category": "resource",
+      "max_confidence": "high"
+    },
+    {
+      "id": "resource-4",
+      "split": "dev",
+      "provider": "airflow",
+      "message": "MemoryError: cannot allocate buffer",
+      "status": "failed",
+      "resource_type": "task",
+      "expected_category": "resource",
+      "max_confidence": "high"
+    },
+    {
+      "id": "resource-5",
+      "split": "holdout",
+      "provider": "airflow",
+      "message": "OSError: No space left on device",
+      "status": "failed",
+      "resource_type": "task",
+      "expected_category": "resource",
+      "max_confidence": "high"
+    },
+    {
+      "id": "resource-6",
+      "split": "holdout",
+      "provider": "airflow",
+      "message": "Container exceeded its memory limit",
+      "status": "failed",
+      "resource_type": "task",
+      "expected_category": "resource",
+      "max_confidence": "high"
+    },
+    {
+      "id": "unknown-1",
+      "split": "dev",
+      "provider": "dbt",
+      "message": "Unexpected error code QX-901; no further detail",
+      "status": "error",
+      "resource_type": "model",
+      "expected_category": "unknown",
+      "max_confidence": "low"
+    },
+    {
+      "id": "unknown-2",
+      "split": "dev",
+      "provider": "airflow",
+      "message": "Worker received SIGTERM during deployment rollout",
+      "status": "failed",
+      "resource_type": "task",
+      "expected_category": "unknown",
+      "max_confidence": "low"
+    },
+    {
+      "id": "unknown-3",
+      "split": "dev",
+      "provider": "airflow",
+      "message": "Process exited with SIGKILL; termination reason unavailable",
+      "status": "failed",
+      "resource_type": "task",
+      "expected_category": "unknown",
+      "max_confidence": "low"
+    },
+    {
+      "id": "unknown-4",
+      "split": "dev",
+      "provider": "dbt",
+      "message": "Object RAW.ORDERS does not exist or not authorized",
+      "status": "error",
+      "resource_type": "model",
+      "expected_category": "database",
+      "max_confidence": "medium"
+    },
+    {
+      "id": "unknown-5",
+      "split": "holdout",
+      "provider": "airflow",
+      "message": "Task cancelled by operator; resource metrics unavailable",
+      "status": "failed",
+      "resource_type": "task",
+      "expected_category": "unknown",
+      "max_confidence": "low"
+    },
+    {
+      "id": "unknown-6",
+      "split": "holdout",
+      "provider": "dbt",
+      "message": "The query was interrupted; no cause reported",
+      "status": "error",
+      "resource_type": "model",
+      "expected_category": "unknown",
+      "max_confidence": "low"
+    }
+  ]
+}

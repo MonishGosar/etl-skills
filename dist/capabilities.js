@@ -21,7 +21,7 @@ export function readOnlyCapabilities(env = process.env) {
             {
                 provider: "dbt",
                 configured: dbtConfigured(env),
-                operations: ["inspect", "diagnose"],
+                operations: ["inspect", "diagnose", "compare_runs"],
                 unavailableMutations: ["run", "build", "test", "retry"],
             },
             {

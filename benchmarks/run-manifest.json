@@ -1,0 +1,18 @@
+{
+  "baseline_commit": "d89c6962f770e299f18f157040b52e2ed76ed03d",
+  "final_source_sha256": {
+    "src/diagnosis.ts": "486402327166c9ea26e42b9e2d11c5f936b10f07c46dd94ffcd51aa0a8943241",
+    "src/dbt-adapter.ts": "38eb25b847381de000f03f8e8980c41af965b672d9282711883b644edc42c60e",
+    "src/airflow-adapter.ts": "14004e943802bdccb10f7afb3fa93e57839289f0812cffa811ea739c722c1ede",
+    "benchmarks/incidents.json": "2eba92ba3d93d1068bb3c1ec8d6edf156f8d62bde1339cfd36f20ef3ff853608",
+    "benchmarks/run.ts": "adce5d2f16e47e5810554bd40e4e708735c9e9aa968f3ffda6dd3861522036ff"
+  },
+  "report_sha256": {
+    "baseline.dev.json": "e9fa18282b3e62d9fb1ca6d3f078a38593984c020ffbe149bc097cba1f6db28e",
+    "baseline.holdout.json": "20fedbd1e66a7f1680dae7364bc68cc81c03bb4aad60128048961ae3d9bbc77f",
+    "improved.dev.json": "add725cb3ef80d9cfb35d62a8a1a2ae9d6fab29b90cdab33690a7344261c8ee0",
+    "improved.holdout.json": "f6e3ea08640f09c56579330e7d7da5df2ba285f89514f10294c1941f9e644529"
+  },
+  "node": "v24.22.1",
+  "note": "Final working-tree source fingerprints. JSON reports identify the base commit and dirty worktree; baseline and improved code are distinguished by these files and the PR diff."
+}

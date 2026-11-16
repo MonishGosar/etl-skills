@@ -1,4 +1,7 @@
 node_modules/
+benchmark-output/
+__pycache__/
+*.pyc
 .npm-cache/
 .env
 .env.*

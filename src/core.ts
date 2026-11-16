@@ -42,6 +42,8 @@ export async function requireApproval(gate: ApprovalGate | undefined, request: A
   if (!await gate.confirm(request)) throw new Error("Execution declined. No request submitted.");
 }
 
+export type JsonValue = string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue };
+
 export type EtlToolResult = {
   content: Array<{ type: "text"; text: string }>;
   structuredContent: {
@@ -49,13 +51,15 @@ export type EtlToolResult = {
     workspace: string;
     status: "ok";
     truncated: boolean;
-    data: unknown;
+    data: JsonValue;
   };
   details: { truncated: boolean };
 };
 
 export function toolResult(provider: ProviderName, workspace: string, data: unknown, limit = 24_000): EtlToolResult {
-  const fullEnvelope = { provider, workspace, status: "ok" as const, truncated: false, data };
+  const encoded = JSON.stringify(data ?? null);
+  const jsonData: JsonValue = encoded === undefined ? null : JSON.parse(encoded);
+  const fullEnvelope = { provider, workspace, status: "ok" as const, truncated: false, data: jsonData };
   const serialized = JSON.stringify(fullEnvelope, null, 2);
   const truncated = serialized.length > limit;
   const envelope = truncated

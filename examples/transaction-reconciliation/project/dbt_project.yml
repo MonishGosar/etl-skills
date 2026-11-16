@@ -1,0 +1,7 @@
+name: etl_reconciliation
+version: '1.0'
+config-version: 2
+profile: etl_reconciliation
+model-paths: [models]
+seed-paths: [seeds]
+test-paths: [tests]
