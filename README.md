@@ -1,269 +1,180 @@
 # ETL Agent Tools
 
-Investigate Databricks, dbt, and Airflow incidents from Pi, Claude Code, Codex, DeepSeek Harness, and other MCP clients.
+Investigate Databricks, dbt, and Airflow failures from your coding agent. Gather run evidence, follow dependencies, and compare a failing dbt run with a successful one.
 
-This package is the diagnosis and safe-repair layer on top of Databricks, and it also reads local dbt artifacts and Airflow DAG runs. Use Databricks managed MCP servers and Databricks agent skills for Genie, ad hoc SQL, Unity Catalog functions, and platform development. Use etl-agent-tools for failed-run evidence, Unity Catalog lineage and grants, optional job cost, dbt and Airflow diagnosis, and interactive Pi repair.
+**Status:** beta (`0.2.0-beta.1`). The MCP server reads evidence. The separate Pi extension can submit Databricks operations after interactive confirmation.
 
-Version `0.2.0-beta.1` adds a bundled read-only stdio MCP server. It inspects Databricks, reads local dbt artifacts, and reads Airflow DAG runs through the stable REST API. Pi also receives guarded Databricks execution tools; every arbitrary SQL submission, pipeline action, job action, and repair requires interactive confirmation. Databricks authentication is a personal access token or an OAuth machine-to-machine service principal.
+[Quick start](#quick-start) · [Architecture](#architecture) · [Tools](#tools) · [Local demo](#local-transaction-reconciliation-demo) · [Documentation](#documentation)
 
-## Who this helps
+## What you can do today
 
-Data engineers investigating failed transformations, orchestration errors, or warehouse access problems from an existing coding agent. The current package gathers bounded evidence, classifies failures, selects upstream-most failing dbt candidates, and compares current dbt artifacts with a caller-supplied successful baseline. The MCP stays read-only; interactive Pi can submit guarded Databricks operations.
+| System | Available now |
+| --- | --- |
+| Databricks | Inspect jobs, runs, pipelines, schemas, and notebooks; read Unity Catalog lineage and grants; optionally inspect job cost. |
+| dbt Core | Diagnose local run artifacts and compare them with a successful baseline you supply. |
+| Airflow | Inspect DAG runs, task instances, and bounded task logs through the REST API. |
 
-The product direction is a complete incident workflow: **identify the causal change, propose a reviewable patch, and prove that repaired outputs reconcile**. A local dbt/DuckDB demonstration now exercises this flow with a supplied patch. Autonomous patch generation, automatic baseline discovery, live comparisons across providers and general-purpose sandbox repair orchestration remain planned work.
+Use it with **Codex, Claude Code, DeepSeek Harness, Pi, or another MCP client**. MCP (Model Context Protocol) lets your agent call the tools. The agent supplies the language model; this package does not host one.
 
-## Measured results
+## Quick start
 
-The repository benchmark uses 54 authored incidents through the production dbt adapter and mocked Airflow GET responses.
+The steps below use Codex and existing local dbt artifacts. You can try this path without cloud credentials.
 
-| Cause-category accuracy | Before | After |
-| --- | --- | --- |
-| Development cases | 23/36 | 36/36 |
-| Reserved wording cases | 13/18 | 18/18 |
-| Combined | 36/54 (66.7%) | 54/54 (100%) |
+**You need:** Node.js 22+, npm, Git, a working Codex installation, and a dbt output directory containing `manifest.json` and `run_results.json`.
 
-The tested redaction, primary-subject, immediate-lineage and read-only checks pass in both versions. The reserved cases share authored error families with development data; they are not an independent project holdout. These results measure broad error categories, not end-to-end root-cause discovery or validated repair. Live Databricks behavior is outside this suite.
+### 1. Install from this repository
 
 ```sh
+git clone https://github.com/MonishGosar/etl-skills.git
+cd etl-skills
 npm ci
+npm run build
+npm install --global .
+```
+
+This installs the checked-out version, including `etl_compare_runs`. See [other installation options](docs/SETUP.md) for the published beta, Claude Code, Pi, and DeepSeek Harness.
+
+### 2. Connect your data project
+
+In the repository you want to investigate, run:
+
+```sh
+cd /path/to/your/data-project
+etl-agent-tools-setup --harness codex
+```
+
+Setup installs shared skills, adds `.codex/config.toml`, and creates `.etl-agent/project.md`. It records environment variable names without saving secret values. Codex must trust the project for its project configuration to load.
+
+### 3. Point to your dbt artifacts
+
+Set the variable in the terminal that will launch Codex:
+
+```sh
+export DBT_ARTIFACTS_DIR="/absolute/path/to/dbt/target"
+```
+
+<details>
+<summary>Windows PowerShell</summary>
+
+Use `npm.cmd` in place of `npm` if PowerShell blocks the npm script. Set the path with:
+
+```powershell
+$env:DBT_ARTIFACTS_DIR = "C:\path\to\dbt\target"
+```
+
+</details>
+
+The package reads existing artifacts; it does not run dbt. It also does not load `.env` files automatically. For cloud access, follow [Databricks configuration](ENVIRONMENT_SETUP.md#databricks-implemented) or [Airflow configuration](ENVIRONMENT_SETUP.md#apache-airflow-implemented-read-only).
+
+### 4. Verify the connection and investigate
+
+```sh
+codex mcp list
+codex
+```
+
+Confirm that the `etl` server is listed. Inside Codex, ask:
+
+> Call `etl_capabilities` to check my configuration, then use `etl_diagnose` with provider `dbt` to investigate the failed run. Show the primary failure, upstream evidence, and suggested next step.
+
+`etl_capabilities` checks configuration without contacting a remote workspace. Restart the agent after changing environment variables.
+
+## Architecture
+
+```mermaid
+flowchart TD
+    Agent["Coding agent: Codex, Claude Code, or another MCP client"] --> MCP["Read-only MCP server"]
+    MCP --> DBX["Databricks adapter"]
+    MCP --> DBT["dbt adapter"]
+    MCP --> AF["Airflow adapter"]
+    DBX --> DBXAPI["Databricks and Unity Catalog APIs"]
+    DBT --> Files["Local manifest, run results, and optional log"]
+    AF --> AFAPI["Airflow REST API: GET requests"]
+    DBX --> Result["Bounded evidence and structured results"]
+    DBT --> Result
+    AF --> Result
+    Result --> Agent
+    Pi["Interactive Pi extension"] --> Gate{"Confirm operation"}
+    Gate -->|Approved| DBX
+```
+
+1. Your agent calls a tool with a provider and investigation target.
+2. The adapter reads run data, metadata, or local artifacts. dbt and Airflow diagnosis add a failure category and dependency context.
+3. Results return with provider identity, size limits, and scrubbed error excerpts. The agent uses that evidence to explain the incident.
+4. In Pi, a separate confirmation gate protects SQL submission, job and pipeline control, and repairs.
+
+The MCP cannot start runs, execute dbt, submit arbitrary SQL, or repair jobs. Its Unity Catalog helper can submit fixed read-only `SELECT` statements for lineage fallback and optional job cost when a warehouse is configured.
+
+See [the architecture guide](docs/ARCHITECTURE.md) for the code layout, comparison rules, and execution boundaries.
+
+## Tools
+
+These six tools are exposed by the MCP server:
+
+| Tool | Use it to… |
+| --- | --- |
+| `etl_capabilities` | Check configured providers and available operations. |
+| `etl_inspect` | Read Databricks objects, dbt artifact summaries, or Airflow run/task evidence. |
+| `etl_diagnose` | Build a failure brief for a dbt invocation or Airflow DAG run. |
+| `etl_compare_runs` | Compare current dbt artifacts with a successful baseline. |
+| `etl_uc_context` | Read Unity Catalog lineage, grants, and optional job cost. |
+| `etl_query_status` | Inspect an existing Databricks SQL statement and bounded results. |
+
+### Compare two dbt runs
+
+Ask your agent to call `etl_compare_runs` with:
+
+```json
+{
+  "artifacts_dir": "/project/current/target",
+  "baseline_artifacts_dir": "/project/last-good/target"
+}
+```
+
+Each directory needs its own `manifest.json` and `run_results.json`. You choose the successful baseline. The tool reports code/configuration fingerprints, declared column metadata, and dependency changes. Changes are investigation candidates; they do not establish the cause by themselves.
+
+### Local transaction reconciliation demo
+
+From this repository, after `npm ci` and `npm run build`, run the demo with [uv](https://docs.astral.sh/uv/getting-started/installation/):
+
+```sh
+uv run --no-project --with dbt-duckdb==1.11.1 --with dbt-core==1.12.6 --with duckdb==2.0.0 python examples/transaction-reconciliation/run_demo.py --output benchmark-output/reconciliation.json
+```
+
+The demo creates a disposable dbt/DuckDB project. It injects an incremental-model defect, compares artifacts, and applies a supplied fixture patch:
+
+| Stage | Expected output |
+| --- | --- |
+| Faulty run | Model succeeds, but data tests fail: 6 rows / 6,000 cents. |
+| Repaired run | Tests pass: 3 unique transactions / 3,000 cents. |
+| Repeat build | The repaired totals and unique IDs remain correct. |
+
+This exercises a known local repair. Automatic patch generation and general repair orchestration remain planned. See [the recorded report](benchmarks/results/reconciliation-demo.json).
+
+## Benchmarks and development
+
+The authored classification suite improved from **36/54 to 54/54** cases. It measures error categories using local dbt artifacts and mocked Airflow responses. Reserved wording cases share authored error families with development cases; they are not an independent project holdout. The score does not measure production repair success.
+
+From the repository root:
+
+```sh
+npm run verify
 npm run benchmark -- --split dev --gate
 npm run benchmark -- --split holdout --gate
 ```
 
-See [benchmark methodology, raw reports and regression gates](benchmarks/README.md).
+`verify` checks types, builds the package, runs tests, and verifies a packed installation. These checks need no Databricks credentials. See [benchmark methodology and raw results](benchmarks/README.md).
 
-## Compare a failing dbt run with a successful baseline
+## Documentation
 
-`etl_compare_runs` reads `manifest.json` and `run_results.json` from two separate directories. It checks baseline success, project/invocation consistency and timestamp ordering when metadata exists. It reports code/configuration fingerprint, declared column metadata and dependency changes, ranked by their relationship to the selected failing subject. Raw SQL/configuration values are not returned.
-
-```json
-{"artifacts_dir":"/project/current/target","baseline_artifacts_dir":"/project/last-good/target"}
-```
-
-An optional `node_id` focuses the comparison, including on a successful model with failing downstream data tests. The caller chooses the baseline; the tool does not discover the latest successful invocation. Missing metadata is reported as uncertainty. Declared manifest columns are not a live warehouse schema snapshot, and observed changes are investigation candidates until reproduction and validation support causality.
-
-### Local transaction reconciliation demo
-
-```sh
-npm ci
-npm run build
-uv run --no-project --with dbt-duckdb==1.11.1 --with dbt-core==1.12.6 --with duckdb==2.0.0 python examples/transaction-reconciliation/run_demo.py --output benchmark-output/reconciliation.json
-```
-
-The demo creates a disposable DuckDB database and its own dbt profile, injects an append-only incremental defect, compares the artifacts, and applies the supplied `unique_key`/`delete+insert` fixture patch. The observed bad run succeeds at model execution but produces **6 rows / 6,000 cents** and fails data tests. The repaired run restores **3 unique transactions / 3,000 cents**; a replay preserves those results. CI runs this demonstration separately from the read-only MCP.
-
-See [the recorded report](benchmarks/results/reconciliation-demo.json) and the [documented DuckDB incremental strategies](https://docs.getdbt.com/reference/resource-configs/duckdb-configs). This demonstrates a known local repair, not autonomous patch generation, customer repair accuracy, remote warehouse execution or a production rollback.
-
-## Development priorities
-
-Existing products already investigate data/code changes and lineage, expose MCP tools, and advertise proposed/verified fixes; see [Monte Carlo's troubleshooting documentation](https://docs.getmontecarlo.com/docs/troubleshooting-agent). The opportunity to test is a focused workflow that fits a small team's existing coding agent and resolves a specific class of incidents with less effort. Competitive advantage remains a hypothesis until comparable evaluations and customer pilots support it.
-
-The following are the next steps beyond the implemented dbt artifact comparison and local reconciliation demo:
-
-| Priority | Build next | Evidence required |
-| --- | --- | --- |
-| 1 | Extend dbt comparison to live source schemas, Git revisions and execution history across Airflow/Databricks. Automatically identify a compatible successful baseline. | Identify the first causal change with source evidence on multi-failure incidents, including misleading downstream errors. |
-| 2 | Extend the supplied-patch demonstration to agent-proposed patches and general sandbox orchestration. Keep remote mutations behind their operation-specific confirmation gates. | Passing transformation tests plus reconciled row counts, unique transaction IDs and business totals; record failed repairs and unsafe actions. |
-| 3 | Investigate successful jobs with incorrect outputs: duplicate transactions, stale inputs, missing partitions and faulty incremental logic. | Detect the injected data error and restore the expected data, even when job status is green. |
-| 4 | Save reviewed incident evidence, accepted fixes and validation outcomes for later investigations. | Improve resolution on different incidents and projects without repeating an obsolete fix or exposing secrets. |
-
-Start with **transaction reconciliation across dbt, Airflow and Databricks**: duplicate or missing transactions must reconcile after a proposed fix. Complete this workflow across the supported systems before expanding the provider list in [FUTURE_WORK.md](FUTURE_WORK.md).
-
-## How we would demonstrate an advantage
-
-Create an initial evaluation of at least 100 independently reviewed incidents across three or more projects. Keep entire projects out of development, hide accepted causes/fixes, and include sanitized historical incidents alongside injected failures.
-
-Compare the same model, repository access and time/token budget under logs-only, standard repository/provider tools, and ETL Agent Tools conditions. Score causal evidence and **correctly repaired, reconciled incidents** separately from category accuracy. Report unresolved cases/timeouts, median time to a validated fix, engineer edits, model cost per validated fix, and unsafe actions.
-
-A proposed first-pilot goal is 25% lower median time to a validated fix than the strongest baseline, without reducing verified resolution success or weakening approval gates. This is a target, not a measured result. Claims against a commercial product require running comparable cases against that product; the current synthetic score does not establish market superiority.
-
-The Pi SDK result-type incompatibilities are resolved by JSON-normalized structured results and pinned development SDKs. Complete the remaining live compatibility checks in [RELEASE_PLAN.md](RELEASE_PLAN.md) before a commercial pilot.
-
-## Guided setup
-
-Install the beta once, open the repository where you want to use it, and run:
-
-```powershell
-npm.cmd install --global etl-agent-tools@beta
-etl-agent-tools-setup
-```
-
-Choose Codex, Claude Code, DeepSeek Harness, Pi, or all supported harnesses. The setup command installs the same shared skills in the correct directory, safely adds the available project configuration, creates `.etl-agent/project.md`, and prints any final harness command. It records environment-variable names for a personal access token or an OAuth service principal, and it never asks for or writes a secret.
-
-The harness-specific sections below are manual alternatives and troubleshooting references.
-
-## Support
-
-| Harness | Skills | Read-only MCP tools | Guarded mutations |
-| --- | --- | --- | --- |
-| Pi | Packaged automatically | `etl_inspect`, `etl_uc_context`, `etl_diagnose`, plus `dbx_inspect` alias | `dbx_query`, `dbx_pipeline`, `dbx_run`, `dbx_repair` |
-| Claude Code | Claude plugin | `etl_capabilities`, `etl_inspect`, `etl_uc_context`, `etl_query_status`, `etl_diagnose`, `etl_compare_runs` | Unavailable in this beta |
-| Codex | Install into `.agents/skills` | `etl_capabilities`, `etl_inspect`, `etl_uc_context`, `etl_query_status`, `etl_diagnose`, `etl_compare_runs` | Unavailable in this beta |
-| DeepSeek Harness | Install into `.agents/skills` | `etl_capabilities`, `etl_inspect`, `etl_uc_context`, `etl_query_status`, `etl_diagnose`, `etl_compare_runs` | Unavailable in this beta |
-| Other MCP clients | Client-specific | `etl_capabilities`, `etl_inspect`, `etl_uc_context`, `etl_query_status`, `etl_diagnose`, `etl_compare_runs` | Unavailable in this beta |
-
-Databricks inspection, local dbt artifact diagnosis, and read-only Airflow diagnosis are implemented. Snowflake, dbt Cloud, and managed Airflow identity flows in [ENVIRONMENT_SETUP.md](ENVIRONMENT_SETUP.md) are not read by this release.
-
-## Alongside Databricks managed MCP servers
-
-Databricks hosts managed MCP servers for governed data access, including Genie, Databricks SQL, Unity Catalog functions, and AI Search. Databricks agent skills, installed with `databricks aitools`, carry the platform workflows that earlier AI Dev Kit installs provided. Where those skill sets overlap, follow the current Databricks install path.
-
-Connect both to the same coding agent:
-
-- Point Genie questions, ad hoc SQL, semantic search, and Unity Catalog function calls at the managed MCP server.
-- Point failed job, task, and pipeline diagnosis at this server: `etl_inspect` for run evidence and `etl_uc_context` for upstream and downstream lineage, grants, and optional `system.billing` job cost.
-- Keep repair, pipeline control, and arbitrary SQL on interactive Pi, where each request asks for confirmation.
-
-Use a dedicated least-privilege principal for this server. OAuth machine-to-machine (service principal client ID and secret) is the preferred unattended credential. A short-lived personal access token still works. An interactive user session on a managed MCP server can use a different credential. This package does not register or replace the managed servers. Enable those in the Databricks account or workspace and follow [Databricks-provided MCPs](https://docs.databricks.com/aws/en/agents/mcp-tools/) and [Agent skills](https://docs.databricks.com/aws/en/agent-skills/).
-
-## Configure Databricks
-
-Set values in the same terminal before starting the harness:
-
-Personal access token:
-
-```powershell
-$env:DATABRICKS_HOST = "https://your-workspace.cloud.databricks.com"
-$env:DATABRICKS_TOKEN = "your-short-lived-token"
-# Needed for arbitrary SQL in Pi, and for optional job cost:
-$env:DATABRICKS_WAREHOUSE_ID = "your-sandbox-warehouse-id"
-```
-
-OAuth machine-to-machine service principal:
-
-```powershell
-$env:DATABRICKS_HOST = "https://your-workspace.cloud.databricks.com"
-$env:DATABRICKS_CLIENT_ID = "your-service-principal-client-id"
-$env:DATABRICKS_CLIENT_SECRET = "your-oauth-secret"
-# Optional. Defaults to all-apis. Prefer the scopes bound to the OAuth secret.
-$env:DATABRICKS_OAUTH_SCOPE = "all-apis"
-$env:DATABRICKS_WAREHOUSE_ID = "your-sandbox-warehouse-id"
-```
-
-Set `DATABRICKS_AUTH` to `pat` or `oauth-m2m` when both credential families are present, and unset the family you are not using. The server exchanges the client ID and secret at `{workspace}/oidc/v1/token`, caches the access token in memory, and refreshes it before the one-hour expiry. The package does not load `.env` files. See [ETL workspace environment setup](ENVIRONMENT_SETUP.md) for where to obtain each value, optional catalog/schema defaults, dbt artifact paths, Airflow API settings, and credential handling.
-
-## Configure dbt artifacts
-
-Point the server at a directory that already contains `run_results.json` and `manifest.json`. The server does not run dbt.
-
-```powershell
-$env:DBT_ARTIFACTS_DIR = "C:\path\to\dbt\target"
-# Optional:
-$env:DBT_LOG_PATH = "C:\path\to\dbt\logs\dbt.log"
-```
-
-`DBT_PROJECT_DIR` is an alternative. The server then reads `<project>\target`. `etl_diagnose` can also take `artifacts_dir` for one call.
-
-## Configure Airflow
-
-Set the stable REST API version explicitly. Use `v1` for Airflow 2 and `v2` for Airflow 3. This release sends GET requests with bearer or basic auth. It does not trigger, clear, or retry tasks.
-
-```powershell
-$env:AIRFLOW_BASE_URL = "https://airflow-sandbox.example.com"
-$env:AIRFLOW_API_VERSION = "v2"
-$env:AIRFLOW_AUTH_MODE = "bearer"
-$env:AIRFLOW_TOKEN = "your-short-lived-jwt"
-$env:AIRFLOW_ENVIRONMENT = "sandbox"
-```
-
-HTTP is accepted only for `localhost` and `127.0.0.1`. Amazon MWAA and Google IAP auth are not implemented.
-
-## Install for Pi
-
-From this repository:
-
-```powershell
-npm.cmd install
-npm.cmd run build
-pi install .
-pi
-```
-
-From npm:
-
-```powershell
-pi install npm:etl-agent-tools@0.2.0-beta.1
-```
-
-Run `/setup-etl-workspace` once in the target repository, then use `/diagnose-pipeline`, `/schema-drift`, or `/safe-repair`.
-
-## Install for Claude Code
-
-Test the checked-out plugin:
-
-```powershell
-npm.cmd install
-npm.cmd run build
-claude --plugin-dir .
-```
-
-Inside Claude Code, run `/mcp` and confirm that the `etl` server is connected. The setup workflow is namespaced as `/etl-agent-tools:setup-etl-workspace`.
-
-After the GitHub release is published, install through the repository marketplace:
-
-```text
-/plugin marketplace add MonishGosar/etl-skills
-/plugin install etl-agent-tools@etl-agent-tools
-```
-
-The plugin-root `.mcp.json` launches the bundled server and forwards the documented Databricks, dbt, and Airflow variable names.
-
-## Install for Codex
-
-Install the package and copy the shared skills into a repository:
-
-```powershell
-npm.cmd install --global etl-agent-tools@0.2.0-beta.1
-etl-agent-tools-install-skills --target .agents/skills
-```
-
-Copy the `mcp_servers.etl` table from `config/codex.config.toml` into the trusted project's `.codex/config.toml`, then verify:
-
-```powershell
-codex mcp list
-```
-
-The template forwards selected variables from the environment instead of storing their values in configuration.
-
-## Install for DeepSeek Harness
-
-Install the package, install the skills, and merge `config/deepseek.cordis.yml` into a user or project Cordis patch:
-
-```powershell
-npm.cmd install --global etl-agent-tools@0.2.0-beta.1
-etl-agent-tools-install-skills --target .agents/skills
-```
-
-The DeepSeek MCP client intentionally scrubs credential-shaped ambient variables. The supplied overlay explicitly forwards Databricks variables, including the OAuth client secret, plus dbt and Airflow variables, to the child server. Start DeepSeek Harness with the resulting patch and confirm that `mcp__etl__etl_capabilities`, `mcp__etl__etl_inspect`, `mcp__etl__etl_uc_context`, `mcp__etl__etl_query_status`, `mcp__etl__etl_diagnose`, and `mcp__etl__etl_compare_runs` are discovered.
-
-## MCP tools
-
-| Tool | Purpose |
+| Guide | Read it for… |
 | --- | --- |
-| `etl_capabilities` | Report which providers are configured and which read-only operations exist, without contacting a remote workspace |
-| `etl_inspect` | Read Databricks jobs, runs, schemas, notebooks, and pipelines; dbt artifact summaries; or Airflow DAG runs, task instances, and bounded task logs |
-| `etl_uc_context` | Read lineage and grants for a failing table, and optional job cost from `system.billing` when `job_id` is set |
-| `etl_query_status` | Read an existing Databricks SQL statement and bounded result without submitting or cancelling it |
-| `etl_diagnose` | Build a root-cause brief for a dbt invocation or an Airflow DAG run: failed node or task, scrubbed error excerpt, upstream and downstream impact, cause category, and suggested next step |
-| `etl_compare_runs` | Compare current dbt artifacts with a caller-selected successful baseline; return bounded change candidates and missing-evidence notes without executing dbt, Git, SQL or repairs |
+| [Setup by agent](docs/SETUP.md) | Codex, Claude Code, DeepSeek Harness, Pi, and other MCP clients. |
+| [Environment setup](ENVIRONMENT_SETUP.md) | Databricks PAT/OAuth, dbt paths, Airflow authentication, and credential handling. |
+| [Architecture](docs/ARCHITECTURE.md) | Adapters, diagnosis, comparison, and the Pi confirmation gate. |
+| [Roadmap](docs/ROADMAP.md) | Planned recovery workflows and how we intend to evaluate them. |
+| [Security](SECURITY.md) | Access boundaries, credential handling, and reporting issues. |
+| [Release plan](RELEASE_PLAN.md) | Remaining live compatibility checks and release gates. |
+| [Changelog](CHANGELOG.md) | User-visible changes. |
 
-Results include provider and workspace identity. Text output is capped at 24,000 characters, and oversized structured data is omitted with an explicit truncation marker. Provider error bodies are not returned because they can contain credentials or source data. Log excerpts are capped and scrubbed the same way.
-
-## Safety model
-
-The MCP server is read-only and rejects unknown command-line flags. It cannot submit arbitrary SQL, start or stop an execution, cancel work, repair a run, invoke dbt, or trigger an Airflow task. dbt diagnosis reads only `run_results.json`, `manifest.json`, and an optional `dbt.log`. Airflow diagnosis sends GET requests only. `etl_uc_context` may submit only its built-in `SELECT` statements: a `system.access` lineage fallback when the lineage API is unavailable, and a `system.billing` job-cost statement when `job_id` is set. Both require `DATABRICKS_WAREHOUSE_ID` and return `available: false` when the principal is not permitted.
-
-Pi mutations pass through a shared operation policy and Pi's interactive confirmation gate. Acceptance of a remote request is not completion: inspect the returned identifier and poll the remote state. A pipeline or job run uses deployed Databricks code and does not deploy a local patch.
-
-Use a dedicated sandbox principal and separate sandbox resources. Catalog and schema defaults resolve names but do not enforce isolation.
-
-## Development and release verification
-
-```powershell
-npm.cmd install
-npm.cmd run verify
-```
-
-The verification command builds both bundled executables, type-checks source, runs mocked HTTP and MCP protocol tests, and inspects the npm tarball. Tests do not require Databricks credentials.
-
-See [RELEASE_PLAN.md](RELEASE_PLAN.md) for remaining live compatibility checks and release gates. Provider expansion is tracked separately in [FUTURE_WORK.md](FUTURE_WORK.md). User-visible changes are recorded in [CHANGELOG.md](CHANGELOG.md).
+Automatic baseline discovery, live Git/schema comparison, and autonomous repairs remain future work. Snowflake and dbt Cloud adapters are also planned; see [provider expansion](FUTURE_WORK.md).
